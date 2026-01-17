@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import useSWR from 'swr';
 
 type Role = 'USER' | 'ADMIN';
 
@@ -10,40 +10,44 @@ export interface MeUser {
   phone?: string | null;
 }
 
+const fetcher = async (): Promise<MeUser | null> => {
+  const response = await fetch('/api/me', {
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to retrieve profile');
+  }
+
+  const data = (await response.json()) as { user: MeUser };
+  return data.user;
+};
+
 export const useMe = () => {
-  const [user, setUser] = useState<MeUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchMe = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/me', { credentials: 'include' });
-
-      if (response.status === 401) {
-        setUser(null);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Unable to retrieve profile');
-      }
-
-      const data = (await response.json()) as { user: MeUser };
-      setUser(data.user);
-    } catch (err) {
-      setUser(null);
-      setError(err instanceof Error ? err.message : 'Unexpected error');
-    } finally {
-      setLoading(false);
+  const { data, error, isLoading, mutate } = useSWR<MeUser | null>(
+    '/api/me',
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30_000,
+      keepPreviousData: true,
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    void fetchMe();
-  }, [fetchMe]);
+  const loading = isLoading && data === undefined;
 
-  return { user, loading, error, refresh: fetchMe };
+  return {
+    user: data ?? null,
+    loading,
+    error: error ? error.message : null,
+    refresh: () => mutate(),
+  };
 };
