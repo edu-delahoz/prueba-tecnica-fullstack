@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { Prisma } from '@prisma/client';
-import { Role } from "@prisma/client";
+import { Role } from '@prisma/client';
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
