@@ -7,6 +7,7 @@ import { ArrowLeft, ShieldOff } from 'lucide-react';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
 import { UsersTable } from '@/components/users/UsersTable';
 import { TopNav } from '@/components/layout/TopNav';
+import { TablePagination } from '@/components/table/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,9 +19,11 @@ import {
 } from '@/components/ui/card';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
+import { usePagination } from '@/lib/hooks/usePagination';
 import type { Role, UserRow } from '@/lib/users/types';
 import { useUsers } from '@/lib/users/useUsers';
 
+// eslint-disable-next-line complexity
 const UsersPage: NextPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
   const isAdmin = user?.role === 'ADMIN';
@@ -33,6 +36,15 @@ const UsersPage: NextPage = () => {
   } = useUsers({
     enabled: isAdmin && !meLoading,
   });
+  const {
+    items: paginatedUsers,
+    page: usersPage,
+    pageSize: usersPageSize,
+    totalPages: usersTotalPages,
+    nextPage: nextUsersPage,
+    prevPage: prevUsersPage,
+    setPageSize: setUsersPageSize,
+  } = usePagination(users);
 
   const [banner, setBanner] = useState<{
     type: 'success' | 'error';
@@ -150,7 +162,21 @@ const UsersPage: NextPage = () => {
           <Badge variant='secondary'>Admin-only</Badge>
         </CardHeader>
         <CardContent>
-          <UsersTable users={users} canEdit={isAdmin} onEdit={openEditModal} />
+          <UsersTable
+            users={paginatedUsers}
+            canEdit={isAdmin}
+            onEdit={openEditModal}
+          />
+          {users.length > 0 && (
+            <TablePagination
+              page={usersPage}
+              totalPages={usersTotalPages}
+              onPrev={prevUsersPage}
+              onNext={nextUsersPage}
+              pageSize={usersPageSize}
+              onPageSizeChange={setUsersPageSize}
+            />
+          )}
         </CardContent>
       </Card>
     );

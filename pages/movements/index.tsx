@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { TopNav } from '@/components/layout/TopNav';
+import { TablePagination } from '@/components/table/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +49,7 @@ import {
 } from '@/components/ui/table';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
+import { usePagination } from '@/lib/hooks/usePagination';
 
 type MovementRole = 'INCOME' | 'EXPENSE';
 
@@ -114,6 +116,15 @@ const MovementsPage: NextPage = () => {
   const [formLoading, setFormLoading] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
+  const {
+    items: paginatedMovements,
+    page: movementsPage,
+    pageSize: movementsPageSize,
+    totalPages: movementsTotalPages,
+    nextPage: nextMovementsPage,
+    prevPage: prevMovementsPage,
+    setPageSize: setMovementsPageSize,
+  } = usePagination(movements);
 
   const fetchMovements = useCallback(async () => {
     setListLoading(true);
@@ -328,39 +339,60 @@ const MovementsPage: NextPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {movements.map((movement) => (
-                <TableRow key={movement.id}>
-                  <TableCell className='font-medium'>
-                    {movement.concept}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center gap-2 font-semibold ${
-                        movement.type === 'INCOME'
-                          ? 'text-emerald-600'
-                          : 'text-rose-600'
-                      }`}
-                    >
-                      <DollarSign className='h-4 w-4' />
-                      {formatAmount(movement.amount)}
-                    </span>
-                  </TableCell>
-                  <TableCell className='text-muted-foreground'>
-                    <span className='inline-flex items-center gap-2'>
-                      <CalendarDays className='h-4 w-4' />
-                      {formatDate(movement.date)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {movement.user.name ?? movement.user.email}
-                    <p className='text-xs text-muted-foreground'>
-                      {movement.user.email}
-                    </p>
+              {paginatedMovements.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className='py-8 text-center text-sm text-muted-foreground'
+                  >
+                    No movements available.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                paginatedMovements.map((movement) => (
+                  <TableRow key={movement.id}>
+                    <TableCell className='font-medium'>
+                      {movement.concept}
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center gap-2 font-semibold ${
+                          movement.type === 'INCOME'
+                            ? 'text-emerald-600'
+                            : 'text-rose-600'
+                        }`}
+                      >
+                        <DollarSign className='h-4 w-4' />
+                        {formatAmount(movement.amount)}
+                      </span>
+                    </TableCell>
+                    <TableCell className='text-muted-foreground'>
+                      <span className='inline-flex items-center gap-2'>
+                        <CalendarDays className='h-4 w-4' />
+                        {formatDate(movement.date)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {movement.user.name ?? movement.user.email}
+                      <p className='text-xs text-muted-foreground'>
+                        {movement.user.email}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
+          {movements.length > 0 && (
+            <TablePagination
+              page={movementsPage}
+              totalPages={movementsTotalPages}
+              onPrev={prevMovementsPage}
+              onNext={nextMovementsPage}
+              pageSize={movementsPageSize}
+              onPageSizeChange={setMovementsPageSize}
+            />
+          )}
         </CardContent>
       </Card>
     );
