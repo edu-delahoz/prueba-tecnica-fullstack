@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/card';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
+import { buildCsvQuery } from '@/lib/reports/csvPreview';
 import { useReportsSummary } from '@/lib/reports/useReportsSummary';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -161,7 +162,20 @@ const ReportsPage: NextPage = () => {
                 Income, expenses, and net balance grouped by period.
               </CardDescription>
             </div>
-            <DownloadCsvButton />
+            <div className='flex flex-col gap-3 sm:flex-row'>
+              <DownloadCsvButton
+                from={summary.range.from}
+                to={summary.range.to}
+              />
+              <Button asChild variant='secondary' className='gap-2'>
+                <Link
+                  href={`/reports/csv${buildCsvQuery(summary.range)}`}
+                  prefetch={false}
+                >
+                  View CSV online
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
