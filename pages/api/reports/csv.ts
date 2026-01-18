@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { isAuthError, requireAdmin, sendAuthError } from '@/lib/auth/rbac';
 import { prisma } from '@/lib/prisma';
-import { buildMovementsCsv } from '@/lib/reports/csv';
+import { generateCsv, type ReportMovement } from '@/lib/reports';
 import { resolveDateRange, ReportsQueryError } from '@/lib/reports/params';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -37,7 +37,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       },
     });
 
-    const csv = buildMovementsCsv(movements);
+    const normalized: ReportMovement[] = movements.map((movement) => ({
+      type: movement.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+      amount: movement.amount.toString(),
+      concept: movement.concept,
+      date: movement.date.toISOString(),
+      user: {
+        name: movement.user?.name ?? null,
+        email: movement.user?.email ?? null,
+      },
+    }));
+
+    const csv = generateCsv(normalized);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="report.csv"');
     return res.status(200).send(csv);
