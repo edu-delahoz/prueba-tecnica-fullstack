@@ -100,7 +100,7 @@ const SessionAction = ({ user, loading, onSignIn, onSignOut }: TopNavProps) => {
 export const TopNav = ({ user, loading, onSignIn, onSignOut }: TopNavProps) => (
   <header className='border-b border-border/70 bg-background/95 backdrop-blur'>
     <div className='mx-auto flex max-w-6xl items-center justify-between px-6 py-5'>
-      <div>
+      <div className='select-none'>
         <span className='text-lg font-semibold tracking-tight text-foreground'>
           Finance Manager
         </span>
