@@ -31,7 +31,11 @@ export const openApiSpec = {
         type: 'object',
         properties: {
           id: { type: 'string', example: 'usr_123' },
-          name: { type: 'string', example: 'Ada Lovelace' },
+          name: {
+            type: 'string',
+            nullable: true,
+            example: 'Ada Lovelace',
+          },
           email: {
             type: 'string',
             format: 'email',
@@ -46,11 +50,10 @@ export const openApiSpec = {
           createdAt: {
             type: 'string',
             format: 'date-time',
-            nullable: true,
             example: '2026-01-15T12:34:56.000Z',
           },
         },
-        required: ['id', 'name', 'email', 'role'],
+        required: ['id', 'email', 'role', 'createdAt'],
       },
       MeResponse: {
         type: 'object',
@@ -120,8 +123,9 @@ export const openApiSpec = {
         properties: {
           type: { type: 'string', enum: ['INCOME', 'EXPENSE'] },
           amount: {
-            type: 'string',
-            description: 'Decimal string or numeric amount > 0',
+            description:
+              'String or number greater than 0 (decimal precision supported)',
+            oneOf: [{ type: 'string' }, { type: 'number' }],
           },
           concept: { type: 'string' },
           date: {
@@ -222,10 +226,29 @@ export const openApiSpec = {
             },
           },
           401: {
-            description: 'No active session',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
@@ -246,10 +269,29 @@ export const openApiSpec = {
             },
           },
           401: {
-            description: 'User must sign in',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
@@ -286,22 +328,43 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Validation error' },
               },
             },
           },
           401: {
-            description: 'Not signed in',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
               },
             },
           },
           403: {
-            description: 'Signed in but lacks permissions',
+            description: 'Forbidden',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Forbidden' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
@@ -331,18 +394,38 @@ export const openApiSpec = {
             },
           },
           401: {
-            description: 'Not signed in',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
               },
             },
           },
           403: {
-            description: 'Signed in but not admin',
+            description: 'Forbidden',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Forbidden' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
@@ -390,22 +473,25 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Validation error' },
               },
             },
           },
           401: {
-            description: 'Not signed in',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
               },
             },
           },
           403: {
-            description: 'Signed in but not admin',
+            description: 'Forbidden',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Forbidden' },
               },
             },
           },
@@ -414,6 +500,25 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'User not found' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
@@ -454,18 +559,20 @@ export const openApiSpec = {
             },
           },
           401: {
-            description: 'Not signed in',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
               },
             },
           },
           403: {
-            description: 'Signed in but not admin',
+            description: 'Forbidden',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Forbidden' },
               },
             },
           },
@@ -474,6 +581,25 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Invalid date range' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
@@ -509,20 +635,58 @@ export const openApiSpec = {
                 },
               },
             },
+            headers: {
+              'Content-Disposition': {
+                description: 'Indicates download filename.',
+                schema: {
+                  type: 'string',
+                  example: 'attachment; filename="report.csv"',
+                },
+              },
+            },
           },
           401: {
-            description: 'Not signed in',
+            description: 'Unauthorized',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Unauthorized' },
               },
             },
           },
           403: {
-            description: 'Signed in but not admin',
+            description: 'Forbidden',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Forbidden' },
+              },
+            },
+          },
+          400: {
+            description: 'Invalid date range',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Invalid date range' },
+              },
+            },
+          },
+          405: {
+            description: 'Method Not Allowed',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Method Not Allowed' },
+              },
+            },
+          },
+          500: {
+            description: 'Internal Server Error',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: { error: 'Internal Server Error' },
               },
             },
           },
