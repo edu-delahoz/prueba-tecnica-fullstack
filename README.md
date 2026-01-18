@@ -6,6 +6,7 @@ Finance manager app with:
 - Admin user management
 - Reports (balance + chart) + CSV export
 - Swagger/OpenAPI docs at `/api/docs`
+- Raw OpenAPI JSON available at `/api/openapi.json` for tooling integrations
 
 ## Tech Stack
 - Next.js (Pages Router)
