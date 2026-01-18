@@ -1,19 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { ArrowLeft, Download, ShieldOff } from 'lucide-react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { ArrowLeft, ShieldOff } from 'lucide-react';
 
+import { BalanceCard } from '@/components/reports/BalanceCard';
+import { DownloadCsvButton } from '@/components/reports/DownloadCsvButton';
+import { ReportsChart } from '@/components/reports/ReportsChart';
 import { TopNav } from '@/components/layout/TopNav';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,28 +18,7 @@ import {
 } from '@/components/ui/card';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-
-type ReportPoint = {
-  period: string;
-  income: string;
-  expense: string;
-  net: string;
-};
-
-type SummaryPayload = {
-  totalIncome: string;
-  totalExpense: string;
-  balance: string;
-  points: ReportPoint[];
-  range?: {
-    from: string;
-    to: string;
-  };
-};
-
-type SummaryResponse = {
-  data: SummaryPayload;
-};
+import { useReportsSummary } from '@/lib/reports/useReportsSummary';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -61,49 +33,19 @@ const formatCurrency = (value: string) => {
   return currencyFormatter.format(parsed);
 };
 
-const parseNumeric = (value: string) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
 const ReportsPage: NextPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
-  const [summary, setSummary] = useState<SummaryPayload | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-
   const isAdmin = user?.role === 'ADMIN';
 
-  const fetchSummary = useCallback(async () => {
-    setSummaryLoading(true);
-    setSummaryError(null);
-    try {
-      const response = await fetch('/api/reports/summary');
-      const payload = (await response.json()) as SummaryResponse & {
-        error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(payload.error ?? 'Unable to load summary.');
-      }
-      setSummary(payload.data);
-    } catch (error) {
-      setSummary(null);
-      setSummaryError(
-        error instanceof Error
-          ? error.message
-          : 'Unexpected error loading summary.'
-      );
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAdmin || meLoading) {
-      return;
-    }
-    void fetchSummary();
-  }, [isAdmin, meLoading, fetchSummary]);
+  const {
+    data: summary,
+    loading: summaryLoading,
+    error: summaryError,
+    refresh: refreshSummary,
+    chartData,
+  } = useReportsSummary({
+    enabled: isAdmin && !meLoading,
+  });
 
   const handleSignIn = useCallback(async () => {
     if (typeof window === 'undefined') {
@@ -119,17 +61,6 @@ const ReportsPage: NextPage = () => {
     await authClient.signOut();
     await refreshMe();
   }, [refreshMe]);
-
-  const chartData = useMemo(
-    () =>
-      summary?.points.map((point) => ({
-        period: point.period,
-        income: parseNumeric(point.income),
-        expense: parseNumeric(point.expense),
-        net: parseNumeric(point.net),
-      })) ?? [],
-    [summary]
-  );
 
   const rangeLabel = useMemo(() => {
     if (!summary?.range) {
@@ -198,7 +129,7 @@ const ReportsPage: NextPage = () => {
           <CardDescription>{summaryError}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant='outline' onClick={fetchSummary}>
+          <Button variant='outline' onClick={refreshSummary}>
             Retry
           </Button>
         </CardContent>
@@ -215,37 +146,12 @@ const ReportsPage: NextPage = () => {
   } else {
     content = (
       <div className='space-y-8'>
-        <section className='grid gap-4 md:grid-cols-3'>
-          <Card className='bg-gradient-to-br from-slate-900 to-slate-700 text-white'>
-            <CardHeader>
-              <CardDescription className='text-slate-200'>
-                Current balance
-              </CardDescription>
-              <CardTitle className='text-4xl font-semibold'>
-                {formatCurrency(summary.balance)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className='text-sm text-slate-200'>Period: {rangeLabel}</p>
-            </CardContent>
-          </Card>
-          <Card className='bg-white'>
-            <CardHeader>
-              <CardDescription>Total income</CardDescription>
-              <CardTitle className='text-3xl font-semibold text-emerald-600'>
-                {formatCurrency(summary.totalIncome)}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className='bg-white'>
-            <CardHeader>
-              <CardDescription>Total expense</CardDescription>
-              <CardTitle className='text-3xl font-semibold text-red-500'>
-                {formatCurrency(summary.totalExpense)}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </section>
+        <BalanceCard
+          balance={formatCurrency(summary.balance)}
+          totalIncome={formatCurrency(summary.totalIncome)}
+          totalExpense={formatCurrency(summary.totalExpense)}
+          rangeLabel={rangeLabel}
+        />
 
         <Card className='bg-white'>
           <CardHeader className='flex flex-col justify-between gap-4 md:flex-row md:items-center'>
@@ -255,68 +161,11 @@ const ReportsPage: NextPage = () => {
                 Income, expenses, and net balance grouped by period.
               </CardDescription>
             </div>
-            <Button asChild variant='outline' className='gap-2'>
-              <Link
-                href='/api/reports/csv'
-                target='_blank'
-                rel='noreferrer'
-                prefetch={false}
-              >
-                <Download className='h-4 w-4' />
-                Download CSV
-              </Link>
-            </Button>
+            <DownloadCsvButton />
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
-              <div className='h-[360px] w-full'>
-                <ResponsiveContainer width='100%' height='100%'>
-                  <AreaChart data={chartData}>
-                    <CartesianGrid strokeDasharray='4 4' stroke='#e2e8f0' />
-                    <XAxis
-                      dataKey='period'
-                      tick={{ fontSize: 12 }}
-                      stroke='#94a3b8'
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke='#94a3b8'
-                      tickFormatter={(value) => `$${value}`}
-                    />
-                    <Tooltip
-                      formatter={(value: number | undefined) =>
-                        currencyFormatter.format(value ?? 0)
-                      }
-                      labelFormatter={(value) => `Period: ${value}`}
-                    />
-                    <Legend />
-                    <Area
-                      type='monotone'
-                      dataKey='income'
-                      stroke='#10b981'
-                      fill='#d1fae5'
-                      strokeWidth={2}
-                      name='Income'
-                    />
-                    <Area
-                      type='monotone'
-                      dataKey='expense'
-                      stroke='#ef4444'
-                      fill='#fee2e2'
-                      strokeWidth={2}
-                      name='Expense'
-                    />
-                    <Area
-                      type='monotone'
-                      dataKey='net'
-                      stroke='#6366f1'
-                      fill='#e0e7ff'
-                      strokeWidth={2}
-                      name='Net'
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <ReportsChart data={chartData} />
             ) : (
               <div className='flex h-48 items-center justify-center text-sm text-muted-foreground'>
                 No movements available for charting yet.
