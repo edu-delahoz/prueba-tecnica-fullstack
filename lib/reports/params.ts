@@ -49,6 +49,11 @@ const parseDateInput = (value?: string | string[]): Date | undefined => {
   return parsed;
 };
 
+/**
+ * Normalizes the `group` query string into a valid enum value. Defaults to the
+ * highest granularity ("day") because charts can always down-sample but never
+ * infer missing detail.
+ */
 export const parseGroupParam = (value?: string | string[]): ReportGroup => {
   const single = toSingleValue(value);
   if (!single) {
@@ -62,6 +67,12 @@ export const parseGroupParam = (value?: string | string[]): ReportGroup => {
   throw new ReportsQueryError(`Invalid group value: ${single}`);
 };
 
+/**
+ * Resolves an inclusive UTC range for reports queries. When params are missing
+ * we default to the last 30 days because that keeps Prisma queries bounded and
+ * mirrors the UI copy ("Last 30 days"). Throws validation errors instead of
+ * silently swapping values to prevent confusing exports.
+ */
 export const resolveDateRange = (query: ParsedUrlQuery): DateRange => {
   const to = parseDateInput(query.to);
   const from = parseDateInput(query.from);

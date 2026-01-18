@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/card';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
+import { buildCsvQuery } from '@/lib/reports/csvPreview';
 import { useReportsSummary } from '@/lib/reports/useReportsSummary';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -77,7 +78,7 @@ const ReportsPage: NextPage = () => {
 
   if (meLoading) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardContent className='py-6 text-sm text-muted-foreground'>
           Loading session...
         </CardContent>
@@ -85,7 +86,7 @@ const ReportsPage: NextPage = () => {
     );
   } else if (!user) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle>Please sign in</CardTitle>
           <CardDescription>
@@ -99,7 +100,7 @@ const ReportsPage: NextPage = () => {
     );
   } else if (!isAdmin) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-destructive'>
             <ShieldOff className='h-4 w-4' />
@@ -113,7 +114,7 @@ const ReportsPage: NextPage = () => {
     );
   } else if (summaryLoading) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardContent className='py-6 text-sm text-muted-foreground'>
           Loading summary...
         </CardContent>
@@ -121,7 +122,7 @@ const ReportsPage: NextPage = () => {
     );
   } else if (summaryError) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle className='text-destructive'>
             Unable to load report
@@ -137,7 +138,7 @@ const ReportsPage: NextPage = () => {
     );
   } else if (!summary) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardContent className='py-6 text-sm text-muted-foreground'>
           No data available for the selected range.
         </CardContent>
@@ -153,7 +154,7 @@ const ReportsPage: NextPage = () => {
           rangeLabel={rangeLabel}
         />
 
-        <Card className='bg-white'>
+        <Card>
           <CardHeader className='flex flex-col justify-between gap-4 md:flex-row md:items-center'>
             <div>
               <CardTitle>Performance overview</CardTitle>
@@ -161,7 +162,20 @@ const ReportsPage: NextPage = () => {
                 Income, expenses, and net balance grouped by period.
               </CardDescription>
             </div>
-            <DownloadCsvButton />
+            <div className='flex flex-col gap-3 sm:flex-row'>
+              <DownloadCsvButton
+                from={summary.range.from}
+                to={summary.range.to}
+              />
+              <Button asChild variant='secondary' className='gap-2'>
+                <Link
+                  href={`/reports/csv${buildCsvQuery(summary.range)}`}
+                  prefetch={false}
+                >
+                  View CSV online
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
@@ -182,7 +196,7 @@ const ReportsPage: NextPage = () => {
       <Head>
         <title>Reports | Finance Manager</title>
       </Head>
-      <div className='min-h-screen bg-slate-50'>
+      <div className='min-h-screen bg-background'>
         <TopNav
           user={user}
           loading={meLoading}

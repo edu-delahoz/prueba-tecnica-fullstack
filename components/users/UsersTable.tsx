@@ -17,7 +17,7 @@ interface UsersTableProps {
 }
 
 export const UsersTable = ({ users, canEdit, onEdit }: UsersTableProps) => {
-  const shouldShowPhoneColumn = users.some((entry) => Boolean(entry.phone));
+  const columns = canEdit ? 5 : 4;
 
   return (
     <Table>
@@ -25,41 +25,54 @@ export const UsersTable = ({ users, canEdit, onEdit }: UsersTableProps) => {
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
-          {shouldShowPhoneColumn && <TableHead>Phone</TableHead>}
+          <TableHead>Phone</TableHead>
           <TableHead>Role</TableHead>
           {canEdit && <TableHead className='text-right'>Actions</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {users.map((entry) => (
-          <TableRow key={entry.id}>
-            <TableCell className='font-medium'>{entry.name ?? '—'}</TableCell>
-            <TableCell>{entry.email}</TableCell>
-            {shouldShowPhoneColumn && (
+        {users.length === 0 ? (
+          <TableRow>
+            <TableCell
+              colSpan={columns}
+              className='py-8 text-center text-sm text-muted-foreground'
+            >
+              No users found.
+            </TableCell>
+          </TableRow>
+        ) : (
+          users.map((entry) => (
+            <TableRow key={entry.id}>
+              <TableCell className='font-medium'>{entry.name ?? '—'}</TableCell>
+              <TableCell>{entry.email}</TableCell>
               <TableCell>
-                {entry.phone ?? (
+                {entry.phone ? (
+                  entry.phone
+                ) : (
                   <span className='text-muted-foreground'>—</span>
                 )}
               </TableCell>
-            )}
-            <TableCell>
-              <Badge variant={entry.role === 'ADMIN' ? 'default' : 'secondary'}>
-                {entry.role}
-              </Badge>
-            </TableCell>
-            {canEdit && (
-              <TableCell className='text-right'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onEdit(entry)}
+              <TableCell>
+                <Badge
+                  variant={entry.role === 'ADMIN' ? 'default' : 'secondary'}
                 >
-                  Edit
-                </Button>
+                  {entry.role}
+                </Badge>
               </TableCell>
-            )}
-          </TableRow>
-        ))}
+              {canEdit && (
+                <TableCell className='text-right'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => onEdit(entry)}
+                  >
+                    Edit
+                  </Button>
+                </TableCell>
+              )}
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
