@@ -18,6 +18,8 @@ export type ReportPoint = {
   net: string;
 };
 
+// Store currency in cents using bigint operations to avoid float precision
+// issues when summing large sequences of Prisma decimal strings.
 const HUNDRED = 100n;
 
 const normalizeInput = (value: string | number) => {
@@ -78,6 +80,10 @@ const comparePeriods = (a: string, b: string) => {
   return 0;
 };
 
+/**
+ * Sums all income/expense movements to drive the summary widget. Totals use
+ * bigint cents internally to ensure rounding errors never leak into the UI.
+ */
 export const calculateTotals = (movements: ReportMovement[]) => {
   let income = 0n;
   let expense = 0n;
@@ -100,6 +106,11 @@ export const calculateTotals = (movements: ReportMovement[]) => {
   };
 };
 
+/**
+ * Aggregates movements by period ("day" or "month") and returns sorted data
+ * for the chart. Missing days/months are intentionally skipped to avoid
+ * showing misleading zero bars.
+ */
 export const buildPoints = (
   movements: ReportMovement[],
   group: ReportGroup
@@ -130,12 +141,17 @@ export const buildPoints = (
     }));
 };
 
+// RFC 4180 quoting to make sure Excel/Sheets import commas and quotes safely.
 const csvEscape = (value: string) => {
   const shouldQuote = /[",\n]/.test(value);
   const escaped = value.replace(/"/g, '""');
   return shouldQuote ? `"${escaped}"` : escaped;
 };
 
+/**
+ * Generates a RFC-4180 compliant CSV with a fixed header so BI tools can rely
+ * on column order. Amount values are normalized to 2 decimals before writing.
+ */
 export const generateCsv = (movements: ReportMovement[]): string => {
   const header = 'type,amount,concept,date,userName,userEmail';
   const rows = [header];

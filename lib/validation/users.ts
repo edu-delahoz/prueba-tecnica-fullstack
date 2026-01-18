@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 import { z } from 'zod';
 
+// Require at least one field to change so PATCH /users doesn't silently no-op.
 export const userUpdateSchema = z
   .object({
     name: z.string().trim().min(1).optional(),
