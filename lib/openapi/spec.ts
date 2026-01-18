@@ -55,10 +55,33 @@ export const openApiSpec = {
         },
         required: ['id', 'email', 'role', 'createdAt'],
       },
+      MeUser: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'usr_123' },
+          name: {
+            type: 'string',
+            nullable: true,
+            example: 'Ada Lovelace',
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            example: 'ada@example.com',
+          },
+          role: { type: 'string', enum: ['ADMIN', 'USER'], example: 'ADMIN' },
+          phone: {
+            type: 'string',
+            nullable: true,
+            example: '+57 300 000 0000',
+          },
+        },
+        required: ['id', 'email', 'role'],
+      },
       MeResponse: {
         type: 'object',
         properties: {
-          user: { $ref: '#/components/schemas/User' },
+          user: { $ref: '#/components/schemas/MeUser' },
         },
         required: ['user'],
       },
@@ -222,6 +245,15 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/MeResponse' },
+                example: {
+                  user: {
+                    id: 'usr_123',
+                    name: 'Ada Lovelace',
+                    email: 'ada@example.com',
+                    role: 'ADMIN',
+                    phone: '+57 300 000 0000',
+                  },
+                },
               },
             },
           },
