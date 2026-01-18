@@ -6,8 +6,8 @@ import {
   sendAuthError,
 } from '@/lib/auth/rbac';
 import { formatMovement, movementSelect } from '@/lib/movements/format';
-import { validateMovement } from '@/lib/movements/validation';
 import { prisma } from '@/lib/prisma';
+import { movementCreateSchema } from '@/lib/validation/movements';
 
 const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
   await requireSession(req);
@@ -25,9 +25,14 @@ const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
 const handlePost = async (req: NextApiRequest, res: NextApiResponse) => {
   const { session } = await requireAdmin(req);
 
-  const validation = validateMovement(req.body);
-  if ('error' in validation) {
-    return res.status(400).json({ error: validation.error });
+  const validation = movementCreateSchema.safeParse(req.body);
+  if (!validation.success) {
+    const [issue] = validation.error.issues;
+    const message =
+      issue?.path?.[0] === 'type'
+        ? 'type must be INCOME or EXPENSE'
+        : (issue?.message ?? 'Invalid body');
+    return res.status(400).json({ error: message });
   }
 
   const created = await prisma.movement.create({

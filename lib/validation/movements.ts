@@ -3,12 +3,7 @@ import { z } from 'zod';
 
 const amountSchema = z
   .union([z.number(), z.string().trim().min(1)])
-  .transform((value) => {
-    if (typeof value === 'number') {
-      return value;
-    }
-    return Number(value);
-  })
+  .transform((value) => (typeof value === 'number' ? value : Number(value)))
   .refine(Number.isFinite, {
     message: 'amount must be a positive number',
   })
@@ -27,7 +22,7 @@ const amountSchema = z
     }
   });
 
-const movementSchema = z.object({
+export const movementCreateSchema = z.object({
   type: z.nativeEnum(MovementType),
   amount: amountSchema,
   concept: z.string().trim().min(1, { message: 'concept is required' }),
@@ -44,24 +39,4 @@ const movementSchema = z.object({
   }),
 });
 
-export type MovementInput = z.infer<typeof movementSchema>;
-
-export const validateMovement = (body: unknown) => {
-  const result = movementSchema.safeParse(body);
-
-  if (!result.success) {
-    const [issue] = result.error.issues;
-    const message = (() => {
-      if (issue?.path?.[0] === 'type') {
-        return 'type must be INCOME or EXPENSE';
-      }
-      return issue?.message ?? 'Invalid body';
-    })();
-
-    return {
-      error: message,
-    } as const;
-  }
-
-  return { data: result.data } as const;
-};
+export type MovementCreateInput = z.infer<typeof movementCreateSchema>;

@@ -1,20 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Role } from '@prisma/client';
-import { z } from 'zod';
-
 import { isAuthError, requireAdmin, sendAuthError } from '@/lib/auth/rbac';
 import { prisma } from '@/lib/prisma';
 import { userSelect } from '@/lib/users/select';
-
-const patchSchema = z
-  .object({
-    name: z.string().trim().min(1).optional(),
-    role: z.nativeEnum(Role).optional(),
-    phone: z.string().trim().min(1).optional(),
-  })
-  .refine((data) => data.name || data.role || data.phone, {
-    message: 'At least one field must be provided',
-  });
+import { userUpdateSchema } from '@/lib/validation/users';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'PATCH') {
@@ -30,7 +18,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(400).json({ error: 'Invalid user id' });
     }
 
-    const parsed = patchSchema.safeParse(req.body);
+    const parsed = userUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
       const [issue] = parsed.error.issues;
       return res
