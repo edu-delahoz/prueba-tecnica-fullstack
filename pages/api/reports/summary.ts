@@ -2,12 +2,16 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 import { isAuthError, requireAdmin, sendAuthError } from '@/lib/auth/rbac';
 import { prisma } from '@/lib/prisma';
-import { aggregateMovements } from '@/lib/reports/aggregate';
 import {
   parseGroupParam,
   resolveDateRange,
   ReportsQueryError,
 } from '@/lib/reports/params';
+import {
+  buildPoints,
+  calculateTotals,
+  type ReportMovement,
+} from '@/lib/reports';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'GET') {
@@ -36,14 +40,22 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
     });
 
-    const summary = aggregateMovements(movements, group);
+    const normalizedMovements: ReportMovement[] = movements.map((movement) => ({
+      type: movement.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+      amount: movement.amount.toString(),
+      concept: null,
+      date: movement.date.toISOString(),
+    }));
+
+    const totals = calculateTotals(normalizedMovements);
+    const points = buildPoints(normalizedMovements, group);
 
     return res.status(200).json({
       data: {
-        totalIncome: summary.totalIncome,
-        totalExpense: summary.totalExpense,
-        balance: summary.balance,
-        points: summary.points,
+        totalIncome: totals.totalIncome,
+        totalExpense: totals.totalExpense,
+        balance: totals.balance,
+        points,
         group,
         range: {
           from: range.from.toISOString(),
