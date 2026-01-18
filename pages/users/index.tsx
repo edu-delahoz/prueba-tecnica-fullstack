@@ -91,7 +91,7 @@ const UsersPage: NextPage = () => {
   let content: React.ReactNode;
   if (meLoading) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardContent className='flex items-center gap-2 py-6 text-muted-foreground'>
           Loading session...
         </CardContent>
@@ -99,7 +99,7 @@ const UsersPage: NextPage = () => {
     );
   } else if (!user) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle>Please sign in</CardTitle>
           <CardDescription>
@@ -113,7 +113,7 @@ const UsersPage: NextPage = () => {
     );
   } else if (!isAdmin) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2 text-destructive'>
             <ShieldOff className='h-4 w-4' />
@@ -127,7 +127,7 @@ const UsersPage: NextPage = () => {
     );
   } else if (listLoading) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardContent className='flex items-center gap-2 py-6 text-muted-foreground'>
           Loading users...
         </CardContent>
@@ -135,7 +135,7 @@ const UsersPage: NextPage = () => {
     );
   } else if (listError) {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle className='text-destructive'>
             Unable to load users
@@ -151,7 +151,7 @@ const UsersPage: NextPage = () => {
     );
   } else {
     content = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader className='flex flex-row items-center justify-between space-y-0'>
           <div>
             <CardTitle>Team members</CardTitle>
@@ -187,7 +187,7 @@ const UsersPage: NextPage = () => {
       <Head>
         <title>Users | Finance Manager</title>
       </Head>
-      <div className='min-h-screen bg-slate-50'>
+      <div className='min-h-screen bg-background'>
         <TopNav
           user={user}
           loading={meLoading}

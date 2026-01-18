@@ -31,7 +31,7 @@ export const BalanceCard = ({
         <p className='text-sm text-slate-200'>Period: {rangeLabel}</p>
       </CardContent>
     </Card>
-    <Card className='bg-white'>
+    <Card>
       <CardHeader>
         <CardDescription>Total income</CardDescription>
         <CardTitle className='text-3xl font-semibold text-emerald-600'>
@@ -39,7 +39,7 @@ export const BalanceCard = ({
         </CardTitle>
       </CardHeader>
     </Card>
-    <Card className='bg-white'>
+    <Card>
       <CardHeader>
         <CardDescription>Total expense</CardDescription>
         <CardTitle className='text-3xl font-semibold text-red-500'>

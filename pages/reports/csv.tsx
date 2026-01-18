@@ -132,7 +132,7 @@ const CsvPreviewPage: NextPage = () => {
   const renderContent = () => {
     if (meLoading) {
       return (
-        <Card className='bg-white'>
+        <Card>
           <CardContent className='py-6 text-sm text-muted-foreground'>
             Loading session...
           </CardContent>
@@ -142,7 +142,7 @@ const CsvPreviewPage: NextPage = () => {
 
     if (!user) {
       return (
-        <Card className='bg-white'>
+        <Card>
           <CardHeader>
             <CardTitle>Please sign in</CardTitle>
             <CardDescription>
@@ -158,7 +158,7 @@ const CsvPreviewPage: NextPage = () => {
 
     if (!isAdmin) {
       return (
-        <Card className='bg-white'>
+        <Card>
           <CardHeader>
             <CardTitle className='flex items-center gap-2 text-destructive'>
               <ShieldOff className='h-4 w-4' />
@@ -174,7 +174,7 @@ const CsvPreviewPage: NextPage = () => {
 
     if (loading) {
       return (
-        <Card className='bg-white'>
+        <Card>
           <CardContent className='py-6 text-sm text-muted-foreground'>
             Loading CSV preview...
           </CardContent>
@@ -184,7 +184,7 @@ const CsvPreviewPage: NextPage = () => {
 
     if (error) {
       return (
-        <Card className='bg-white'>
+        <Card>
           <CardHeader>
             <CardTitle className='text-destructive'>
               Unable to load CSV preview
@@ -207,7 +207,7 @@ const CsvPreviewPage: NextPage = () => {
 
     if (!preview || preview.headers.length === 0) {
       return (
-        <Card className='bg-white'>
+        <Card>
           <CardContent className='py-6 text-sm text-muted-foreground'>
             No CSV data available for this range.
           </CardContent>
@@ -237,7 +237,7 @@ const CsvPreviewPage: NextPage = () => {
           </div>
         </div>
 
-        <Card className='bg-white'>
+        <Card>
           <CardHeader>
             <CardTitle>Movements table</CardTitle>
             <CardDescription>{filterLabel}</CardDescription>
@@ -278,7 +278,7 @@ const CsvPreviewPage: NextPage = () => {
       <Head>
         <title>CSV Preview | Finance Manager</title>
       </Head>
-      <div className='min-h-screen bg-slate-50'>
+      <div className='min-h-screen bg-background'>
         <TopNav
           user={user}
           loading={meLoading}

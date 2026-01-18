@@ -271,7 +271,7 @@ const MovementsPage: NextPage = () => {
   let movementSection: React.ReactNode;
   if (listLoading) {
     movementSection = (
-      <Card className='bg-white'>
+      <Card>
         <CardContent className='flex items-center gap-3 py-10 text-muted-foreground'>
           <RefreshCw className='h-4 w-4 animate-spin' />
           Loading movements...
@@ -303,7 +303,7 @@ const MovementsPage: NextPage = () => {
     );
   } else if (movements.length === 0) {
     movementSection = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader>
           <CardTitle>No movements yet</CardTitle>
           <CardDescription>
@@ -316,7 +316,7 @@ const MovementsPage: NextPage = () => {
     );
   } else {
     movementSection = (
-      <Card className='bg-white'>
+      <Card>
         <CardHeader className='flex flex-row items-center justify-between space-y-0'>
           <div>
             <CardTitle>Latest movements</CardTitle>
@@ -403,7 +403,7 @@ const MovementsPage: NextPage = () => {
       <Head>
         <title>Movements | Finance Manager</title>
       </Head>
-      <div className='min-h-screen bg-slate-50'>
+      <div className='min-h-screen bg-background'>
         <TopNav
           user={user}
           loading={userLoading}
@@ -421,7 +421,7 @@ const MovementsPage: NextPage = () => {
           </div>
 
           {!user && !userLoading && (
-            <Card className='mb-6 border-dashed bg-white'>
+            <Card className='mb-6 border-dashed'>
               <CardHeader>
                 <CardTitle>Welcome back</CardTitle>
                 <CardDescription>
@@ -542,7 +542,7 @@ const MovementsPage: NextPage = () => {
 
           {movementSection}
 
-          <Card className='mt-10 bg-white'>
+          <Card className='mt-10'>
             <CardHeader>
               <CardTitle>Need more insights?</CardTitle>
               <CardDescription>

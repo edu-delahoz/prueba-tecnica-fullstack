@@ -64,7 +64,7 @@ const HomePage: NextPage = () => {
   const menu = filterMenuItems(user);
 
   return (
-    <div className='min-h-screen bg-slate-50'>
+    <div className='min-h-screen bg-background'>
       <TopNav
         user={user}
         loading={loading}
@@ -73,7 +73,7 @@ const HomePage: NextPage = () => {
       />
       <main className='mx-auto max-w-6xl px-6 py-10'>
         {!user && !loading && (
-          <Card className='mb-8 border-dashed bg-white'>
+          <Card className='mb-8 border-dashed'>
             <CardHeader>
               <CardTitle>Welcome! Please sign in</CardTitle>
               <CardDescription>
@@ -118,7 +118,7 @@ const HomePage: NextPage = () => {
                 href={item.href}
                 className='group block h-full'
               >
-                <Card className='h-full border border-transparent bg-white shadow-sm transition hover:border-primary/40 hover:shadow-md'>
+                <Card className='h-full border border-transparent bg-card shadow-sm transition hover:border-primary/40 hover:shadow-md'>
                   <CardHeader className='flex flex-row items-start justify-between space-y-0'>
                     <div>
                       <CardTitle>{item.title}</CardTitle>
@@ -141,7 +141,7 @@ const HomePage: NextPage = () => {
             );
           })}
           {menu.length === 0 && (
-            <Card className='border-dashed bg-white'>
+            <Card className='border-dashed'>
               <CardHeader>
                 <CardTitle>No sections available</CardTitle>
                 <CardDescription>

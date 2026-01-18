@@ -62,7 +62,7 @@ export const CsvPreviewTable = ({ headers, rows }: CsvPreviewTableProps) => {
   const rowEntries = useMemo(() => createRows(rows), [rows]);
 
   return (
-    <div className='relative max-h-[65vh] overflow-hidden rounded-2xl border border-border/70 bg-white shadow-sm'>
+    <div className='relative max-h-[65vh] overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm'>
       <div className='relative max-h-[65vh] overflow-auto'>
         <table className='w-full caption-bottom text-sm'>
           <TableHeader>
