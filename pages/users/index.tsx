@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -19,13 +19,14 @@ import {
 } from '@/components/ui/card';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-import { usePagination } from '@/lib/hooks/usePagination';
 import type { Role, UserRow } from '@/lib/users/types';
 import { useUsers } from '@/lib/users/useUsers';
 
 // eslint-disable-next-line complexity
 const UsersPage: NextPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const isAdmin = user?.role === 'ADMIN';
   const {
     users,
@@ -33,18 +34,24 @@ const UsersPage: NextPage = () => {
     error: listError,
     refresh,
     updateUser,
+    meta,
   } = useUsers({
     enabled: isAdmin && !meLoading,
+    page,
+    limit: pageSize,
   });
-  const {
-    items: paginatedUsers,
-    page: usersPage,
-    pageSize: usersPageSize,
-    totalPages: usersTotalPages,
-    nextPage: nextUsersPage,
-    prevPage: prevUsersPage,
-    setPageSize: setUsersPageSize,
-  } = usePagination(users);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setPage(1);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (meta.totalPages > 0 && page > meta.totalPages) {
+      setPage(meta.totalPages);
+    }
+  }, [meta.totalPages, page]);
 
   const [banner, setBanner] = useState<{
     type: 'success' | 'error';
@@ -87,6 +94,8 @@ const UsersPage: NextPage = () => {
     },
     [updateUser]
   );
+
+  const hasUsers = meta.total > 0;
 
   let content: React.ReactNode;
   if (meLoading) {
@@ -162,19 +171,22 @@ const UsersPage: NextPage = () => {
           <Badge variant='secondary'>Admin-only</Badge>
         </CardHeader>
         <CardContent>
-          <UsersTable
-            users={paginatedUsers}
-            canEdit={isAdmin}
-            onEdit={openEditModal}
-          />
-          {users.length > 0 && (
+          <UsersTable users={users} canEdit={isAdmin} onEdit={openEditModal} />
+          {hasUsers && (
             <TablePagination
-              page={usersPage}
-              totalPages={usersTotalPages}
-              onPrev={prevUsersPage}
-              onNext={nextUsersPage}
-              pageSize={usersPageSize}
-              onPageSizeChange={setUsersPageSize}
+              page={page}
+              totalPages={meta.totalPages}
+              onPrev={() => setPage((current) => Math.max(current - 1, 1))}
+              onNext={() =>
+                setPage((current) =>
+                  Math.min(current + 1, Math.max(meta.totalPages, 1))
+                )
+              }
+              pageSize={pageSize}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
             />
           )}
         </CardContent>
