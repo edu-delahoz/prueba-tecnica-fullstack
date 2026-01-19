@@ -395,6 +395,16 @@ export const openApiSpec = {
             },
             description: 'Page size (defaults to 20, maximum 100).',
           },
+          {
+            in: 'query',
+            name: 'search',
+            schema: {
+              type: 'string',
+            },
+            description:
+              'Optional filter that matches concept text or movement type.',
+            example: 'consulting',
+          },
         ],
         responses: {
           200: {
@@ -402,27 +412,58 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/MovementsListResponse' },
-                example: {
-                  data: [
-                    {
-                      id: 'mov_abc123',
-                      type: 'INCOME',
-                      amount: '1200.50',
-                      concept: 'Consulting services',
-                      date: '2026-01-17T00:00:00.000Z',
-                      createdAt: '2026-01-17T05:00:00.000Z',
-                      user: {
-                        id: 'usr_123',
-                        name: 'Grace Hopper',
-                        email: 'grace@example.com',
+                examples: {
+                  default: {
+                    summary: 'First page without filters',
+                    value: {
+                      data: [
+                        {
+                          id: 'mov_abc123',
+                          type: 'INCOME',
+                          amount: '1200.50',
+                          concept: 'Consulting services',
+                          date: '2026-01-17T00:00:00.000Z',
+                          createdAt: '2026-01-17T05:00:00.000Z',
+                          user: {
+                            id: 'usr_123',
+                            name: 'Grace Hopper',
+                            email: 'grace@example.com',
+                          },
+                        },
+                      ],
+                      meta: {
+                        page: 1,
+                        limit: 20,
+                        total: 42,
+                        totalPages: 3,
                       },
                     },
-                  ],
-                  meta: {
-                    page: 1,
-                    limit: 20,
-                    total: 42,
-                    totalPages: 3,
+                  },
+                  search: {
+                    summary: 'Page 2 filtered by concept search',
+                    value: {
+                      data: [
+                        {
+                          id: 'mov_xyz999',
+                          type: 'EXPENSE',
+                          amount: '450.00',
+                          concept: 'Consulting travel',
+                          date: '2026-02-05T00:00:00.000Z',
+                          createdAt: '2026-02-05T03:00:00.000Z',
+                          user: {
+                            id: 'usr_789',
+                            name: 'Linus',
+                            email: 'linus@example.com',
+                          },
+                        },
+                      ],
+                      meta: {
+                        page: 2,
+                        limit: 10,
+                        total: 12,
+                        totalPages: 2,
+                      },
+                    },
                   },
                 },
               },
@@ -568,6 +609,16 @@ export const openApiSpec = {
             },
             description: 'Page size (defaults to 20, maximum 100).',
           },
+          {
+            in: 'query',
+            name: 'search',
+            schema: {
+              type: 'string',
+            },
+            description:
+              'Optional filter that matches user name or email (case-insensitive).',
+            example: 'ada@example.com',
+          },
         ],
         responses: {
           200: {
@@ -575,22 +626,48 @@ export const openApiSpec = {
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/UsersListResponse' },
-                example: {
-                  data: [
-                    {
-                      id: 'usr_123',
-                      name: 'Ada Lovelace',
-                      email: 'ada@example.com',
-                      phone: '+57 300 000 0000',
-                      role: 'ADMIN',
-                      createdAt: '2026-01-15T12:34:56.000Z',
+                examples: {
+                  default: {
+                    summary: 'First page without filters',
+                    value: {
+                      data: [
+                        {
+                          id: 'usr_123',
+                          name: 'Ada Lovelace',
+                          email: 'ada@example.com',
+                          phone: '+57 300 000 0000',
+                          role: 'ADMIN',
+                          createdAt: '2026-01-15T12:34:56.000Z',
+                        },
+                      ],
+                      meta: {
+                        page: 1,
+                        limit: 20,
+                        total: 5,
+                        totalPages: 1,
+                      },
                     },
-                  ],
-                  meta: {
-                    page: 1,
-                    limit: 20,
-                    total: 5,
-                    totalPages: 1,
+                  },
+                  search: {
+                    summary: 'Filtered by email search (page 2)',
+                    value: {
+                      data: [
+                        {
+                          id: 'usr_456',
+                          name: 'Grace Hopper',
+                          email: 'grace@example.com',
+                          phone: null,
+                          role: 'USER',
+                          createdAt: '2026-02-10T09:15:00.000Z',
+                        },
+                      ],
+                      meta: {
+                        page: 2,
+                        limit: 10,
+                        total: 18,
+                        totalPages: 2,
+                      },
+                    },
                   },
                 },
               },
