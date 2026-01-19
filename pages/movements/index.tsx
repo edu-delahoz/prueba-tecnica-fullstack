@@ -49,7 +49,6 @@ import {
 } from '@/components/ui/table';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-import { usePagination } from '@/lib/hooks/usePagination';
 
 type MovementRole = 'INCOME' | 'EXPENSE';
 
@@ -64,6 +63,13 @@ type MovementRow = {
     name?: string | null;
     email: string;
   };
+};
+
+type MovementsMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
 const amountFormatter = new Intl.NumberFormat('en-US', {
@@ -116,31 +122,57 @@ const MovementsPage: NextPage = () => {
   const [formLoading, setFormLoading] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
-  const {
-    items: paginatedMovements,
-    page: movementsPage,
-    pageSize: movementsPageSize,
-    totalPages: movementsTotalPages,
-    nextPage: nextMovementsPage,
-    prevPage: prevMovementsPage,
-    setPageSize: setMovementsPageSize,
-  } = usePagination(movements);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginationMeta, setPaginationMeta] = useState<MovementsMeta>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
 
   const fetchMovements = useCallback(async () => {
     setListLoading(true);
     setListError(null);
     try {
-      const response = await fetch('/api/movements');
+      const search = new URLSearchParams({
+        page: page.toString(),
+        limit: pageSize.toString(),
+      });
+      const response = await fetch(`/api/movements?${search.toString()}`);
       if (response.status === 401) {
         setMovements([]);
         setListError('Please sign in to view movements.');
+        setPaginationMeta({
+          page: 1,
+          limit: pageSize,
+          total: 0,
+          totalPages: 1,
+        });
+        setPage(1);
         return;
       }
       if (!response.ok) {
         throw new Error('Unable to load movements.');
       }
-      const payload = (await response.json()) as { data: MovementRow[] };
+      const payload = (await response.json()) as {
+        data: MovementRow[];
+        meta?: MovementsMeta;
+      };
       setMovements(payload.data);
+      if (payload.meta) {
+        setPaginationMeta(payload.meta);
+      } else {
+        setPaginationMeta({
+          page,
+          limit: pageSize,
+          total: payload.data.length,
+          totalPages:
+            payload.data.length === 0
+              ? 1
+              : Math.ceil(payload.data.length / pageSize),
+        });
+      }
     } catch (error) {
       setListError(
         error instanceof Error
@@ -150,7 +182,7 @@ const MovementsPage: NextPage = () => {
     } finally {
       setListLoading(false);
     }
-  }, []);
+  }, [page, pageSize]);
 
   useEffect(() => {
     if (userLoading) {
@@ -159,13 +191,20 @@ const MovementsPage: NextPage = () => {
     if (!user) {
       setListLoading(false);
       setMovements([]);
+      setPaginationMeta({
+        page: 1,
+        limit: pageSize,
+        total: 0,
+        totalPages: 1,
+      });
+      setPage(1);
       if (!meError) {
         setListError('Please sign in to view movements.');
       }
       return;
     }
     fetchMovements();
-  }, [user, userLoading, meError, fetchMovements]);
+  }, [user, userLoading, meError, fetchMovements, pageSize]);
 
   const resetForm = () => {
     setForm(initialForm);
@@ -268,6 +307,9 @@ const MovementsPage: NextPage = () => {
     await fetchMovements();
   }, [fetchMovements, refreshMe]);
 
+  const totalRecords = paginationMeta.total;
+  const hasMovements = totalRecords > 0;
+
   let movementSection: React.ReactNode;
   if (listLoading) {
     movementSection = (
@@ -301,7 +343,7 @@ const MovementsPage: NextPage = () => {
         )}
       </Card>
     );
-  } else if (movements.length === 0) {
+  } else if (!hasMovements) {
     movementSection = (
       <Card>
         <CardHeader>
@@ -320,9 +362,7 @@ const MovementsPage: NextPage = () => {
         <CardHeader className='flex flex-row items-center justify-between space-y-0'>
           <div>
             <CardTitle>Latest movements</CardTitle>
-            <CardDescription>
-              Showing {movements.length} records
-            </CardDescription>
+            <CardDescription>Showing {totalRecords} records</CardDescription>
           </div>
           <Badge variant='secondary' className='text-xs'>
             Updated {new Date().toLocaleDateString()}
@@ -339,7 +379,7 @@ const MovementsPage: NextPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedMovements.length === 0 ? (
+              {movements.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={4}
@@ -349,7 +389,7 @@ const MovementsPage: NextPage = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedMovements.map((movement) => (
+                movements.map((movement) => (
                   <TableRow key={movement.id}>
                     <TableCell className='font-medium'>
                       {movement.concept}
@@ -383,14 +423,21 @@ const MovementsPage: NextPage = () => {
               )}
             </TableBody>
           </Table>
-          {movements.length > 0 && (
+          {hasMovements && (
             <TablePagination
-              page={movementsPage}
-              totalPages={movementsTotalPages}
-              onPrev={prevMovementsPage}
-              onNext={nextMovementsPage}
-              pageSize={movementsPageSize}
-              onPageSizeChange={setMovementsPageSize}
+              page={page}
+              totalPages={paginationMeta.totalPages}
+              onPrev={() => setPage((current) => Math.max(current - 1, 1))}
+              onNext={() =>
+                setPage((current) =>
+                  Math.min(current + 1, Math.max(paginationMeta.totalPages, 1))
+                )
+              }
+              pageSize={pageSize}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
             />
           )}
         </CardContent>
