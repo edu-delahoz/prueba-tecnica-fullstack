@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { NextPage } from 'next';
+import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { ArrowLeft, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldOff } from 'lucide-react';
 
 import { EditUserDialog } from '@/components/users/EditUserDialog';
 import { TopNav } from '@/components/layout/TopNav';
@@ -15,18 +15,28 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useMe } from '@/lib/hooks/useMe';
 import { UsersPageIntro } from '@/src/features/users/components/UsersPageIntro';
 import { UsersPagination } from '@/src/features/users/components/UsersPagination';
 import { UsersTable } from '@/src/features/users/components/UsersTable';
 import { useUsersPageState } from '@/src/features/users/hooks/useUsersPageState';
 import { useUsersQuery } from '@/src/features/users/hooks/useUsersQuery';
+import { requireAdminPage } from '@/lib/auth/pageGuard';
 
 // eslint-disable-next-line complexity
-const UsersPage: NextPage = () => {
+const UsersPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search]);
   const {
     data: users,
     meta,
@@ -37,6 +47,7 @@ const UsersPage: NextPage = () => {
     page,
     limit: pageSize,
     enabled: user?.role === 'ADMIN' && !meLoading,
+    search: debouncedSearch,
   });
   const {
     ui: { banner, dialogOpen, selectedUser, canEdit },
@@ -65,6 +76,10 @@ const UsersPage: NextPage = () => {
       setPage(meta.totalPages);
     }
   }, [meta.totalPages, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const hasUsers = meta.total > 0;
 
@@ -105,14 +120,6 @@ const UsersPage: NextPage = () => {
         </CardHeader>
       </Card>
     );
-  } else if (listLoading) {
-    content = (
-      <Card>
-        <CardContent className='flex items-center gap-2 py-6 text-muted-foreground'>
-          Loading users...
-        </CardContent>
-      </Card>
-    );
   } else if (listError) {
     content = (
       <Card>
@@ -142,7 +149,25 @@ const UsersPage: NextPage = () => {
           <Badge variant='secondary'>Admin-only</Badge>
         </CardHeader>
         <CardContent>
-          <UsersTable users={users} canEdit={isAdmin} onEdit={openEditModal} />
+          <div className='mb-4 flex justify-end'>
+            <div className='relative w-full max-w-sm'>
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder='Search by name or email'
+                className='pr-10'
+              />
+              {listLoading && (
+                <Loader2 className='absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground' />
+              )}
+            </div>
+          </div>
+          <UsersTable
+            users={users}
+            canEdit={isAdmin}
+            loading={listLoading}
+            onEdit={openEditModal}
+          />
           {hasUsers && (
             <UsersPagination
               page={page}
@@ -214,5 +239,7 @@ const UsersPage: NextPage = () => {
     </>
   );
 };
+
+export const getServerSideProps: GetServerSideProps = requireAdminPage;
 
 export default UsersPage;

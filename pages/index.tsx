@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BarChart3, Users, Wallet } from 'lucide-react';
+import { ArrowRight, BarChart3, Lock, Users, Wallet } from 'lucide-react';
 
 import { TopNav } from '@/components/layout/TopNav';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/card';
 import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-import type { MeUser } from '@/lib/hooks/useMe';
 
 const NAV_ITEMS = [
   {
@@ -42,9 +41,6 @@ const NAV_ITEMS = [
   },
 ];
 
-const filterMenuItems = (user: MeUser | null) =>
-  NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === 'ADMIN');
-
 const HomePage: NextPage = () => {
   const { user, loading, error, refresh } = useMe();
 
@@ -60,8 +56,6 @@ const HomePage: NextPage = () => {
     await authClient.signOut();
     await refresh();
   }, [refresh]);
-
-  const menu = filterMenuItems(user);
 
   return (
     <div className='min-h-screen bg-background'>
@@ -110,46 +104,78 @@ const HomePage: NextPage = () => {
         </div>
 
         <section className='grid gap-6 md:grid-cols-2'>
-          {menu.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            const isAuthenticated = Boolean(user);
+            const isAdmin = user?.role === 'ADMIN';
+            const isAdminOnly = item.adminOnly;
+            const locked =
+              (!isAuthenticated && !isAdminOnly) || (isAdminOnly && !isAdmin);
+            let lockMessage = 'Admin only';
+            if (!isAuthenticated) {
+              lockMessage = isAdminOnly
+                ? 'Sign in as admin to access'
+                : 'Sign in to access';
+            }
+
+            const card = (
+              <Card
+                aria-disabled={locked}
+                className={`h-full border border-transparent bg-card shadow-sm transition ${
+                  locked
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'hover:border-primary/40 hover:shadow-md'
+                }`}
+              >
+                <CardHeader className='flex flex-row items-start justify-between space-y-0'>
+                  <div>
+                    <CardTitle>{item.title}</CardTitle>
+                    <CardDescription className='mt-2 text-base'>
+                      {item.description}
+                    </CardDescription>
+                  </div>
+                  <div className='rounded-full bg-primary/10 p-3 text-primary'>
+                    <Icon className='h-5 w-5' />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {locked ? (
+                    <div className='mt-6 flex items-center gap-2 text-sm text-muted-foreground'>
+                      <Lock className='h-4 w-4' />
+                      {lockMessage}
+                    </div>
+                  ) : (
+                    <div className='mt-6 flex items-center text-sm font-medium text-primary'>
+                      Open section
+                      <ArrowRight className='ml-2 h-4 w-4 transition group-hover:translate-x-1' />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+
+            if (locked) {
+              return (
+                <div
+                  key={item.title}
+                  className='group block h-full'
+                  aria-disabled='true'
+                >
+                  <div className='pointer-events-none'>{card}</div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.title}
                 href={item.href}
                 className='group block h-full'
               >
-                <Card className='h-full border border-transparent bg-card shadow-sm transition hover:border-primary/40 hover:shadow-md'>
-                  <CardHeader className='flex flex-row items-start justify-between space-y-0'>
-                    <div>
-                      <CardTitle>{item.title}</CardTitle>
-                      <CardDescription className='mt-2 text-base'>
-                        {item.description}
-                      </CardDescription>
-                    </div>
-                    <div className='rounded-full bg-primary/10 p-3 text-primary'>
-                      <Icon className='h-5 w-5' />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className='mt-6 flex items-center text-sm font-medium text-primary'>
-                      Open section
-                      <ArrowRight className='ml-2 h-4 w-4 transition group-hover:translate-x-1' />
-                    </div>
-                  </CardContent>
-                </Card>
+                {card}
               </Link>
             );
           })}
-          {menu.length === 0 && (
-            <Card className='border-dashed'>
-              <CardHeader>
-                <CardTitle>No sections available</CardTitle>
-                <CardDescription>
-                  Sign in as an admin to see Users and Reports navigation.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          )}
         </section>
       </main>
     </div>

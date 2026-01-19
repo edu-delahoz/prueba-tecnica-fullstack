@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import type { NextPage } from 'next';
+import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { ArrowLeft, ShieldOff } from 'lucide-react';
@@ -20,6 +20,7 @@ import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
 import { buildCsvQuery } from '@/lib/reports/csvPreview';
 import { useReportsSummary } from '@/lib/reports/useReportsSummary';
+import { requireAdminPage } from '@/lib/auth/pageGuard';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -34,7 +35,7 @@ const formatCurrency = (value: string) => {
   return currencyFormatter.format(parsed);
 };
 
-const ReportsPage: NextPage = () => {
+const ReportsPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
   const isAdmin = user?.role === 'ADMIN';
 
@@ -233,3 +234,5 @@ const ReportsPage: NextPage = () => {
 };
 
 export default ReportsPage;
+
+export const getServerSideProps: GetServerSideProps = requireAdminPage;

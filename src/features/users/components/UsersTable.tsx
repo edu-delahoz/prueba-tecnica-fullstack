@@ -9,15 +9,24 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { UserRow } from '@/lib/users/types';
+import { TableSkeletonRows } from '@/src/shared/components/TableSkeletonRows';
 
 interface UsersTableProps {
   users: UserRow[];
   canEdit: boolean;
+  loading: boolean;
   onEdit: (user: UserRow) => void;
 }
 
-export const UsersTable = ({ users, canEdit, onEdit }: UsersTableProps) => {
+export const UsersTable = ({
+  users,
+  canEdit,
+  loading,
+  onEdit,
+}: UsersTableProps) => {
   const columns = canEdit ? 5 : 4;
+  const showSkeleton = loading && users.length === 0;
+  const showEmptyState = !loading && users.length === 0;
 
   return (
     <Table>
@@ -31,7 +40,24 @@ export const UsersTable = ({ users, canEdit, onEdit }: UsersTableProps) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {users.length === 0 ? (
+        {showSkeleton && (
+          <TableSkeletonRows
+            columns={columns}
+            renderCell={(columnIndex) => {
+              if (canEdit && columnIndex === columns - 1) {
+                return (
+                  <div className='flex justify-end'>
+                    <div className='h-6 w-16 animate-pulse rounded bg-muted/60' />
+                  </div>
+                );
+              }
+              return (
+                <div className='h-4 w-full animate-pulse rounded bg-muted/60' />
+              );
+            }}
+          />
+        )}
+        {showEmptyState && (
           <TableRow>
             <TableCell
               colSpan={columns}
@@ -40,7 +66,8 @@ export const UsersTable = ({ users, canEdit, onEdit }: UsersTableProps) => {
               No users found.
             </TableCell>
           </TableRow>
-        ) : (
+        )}
+        {!showEmptyState &&
           users.map((entry) => (
             <TableRow key={entry.id}>
               <TableCell className='font-medium'>{entry.name ?? '—'}</TableCell>
@@ -71,8 +98,7 @@ export const UsersTable = ({ users, canEdit, onEdit }: UsersTableProps) => {
                 </TableCell>
               )}
             </TableRow>
-          ))
-        )}
+          ))}
       </TableBody>
     </Table>
   );

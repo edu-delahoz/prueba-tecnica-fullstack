@@ -48,3 +48,16 @@ export const parsePaginationParams = (
 
   return { page, limit };
 };
+
+export const parseSearchParam = (
+  query: NextApiRequest['query'],
+  name = 'search'
+): string | undefined => {
+  const raw = query[name];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};

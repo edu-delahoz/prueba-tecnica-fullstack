@@ -33,12 +33,14 @@ interface UseMovementsQueryParams {
   page: number;
   limit: number;
   enabled: boolean;
+  search?: string;
 }
 
 export const useMovementsQuery = ({
   page,
   limit,
   enabled,
+  search,
 }: UseMovementsQueryParams) => {
   const [data, setData] = useState<MovementRow[]>([]);
   const [meta, setMeta] = useState<MovementsMeta>(buildDefaultMeta(limit));
@@ -57,11 +59,14 @@ export const useMovementsQuery = ({
     setLoading(true);
     setError(null);
     try {
-      const search = new URLSearchParams({
+      const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
-      const response = await fetch(`/api/movements?${search.toString()}`);
+      if (search && search.length > 0) {
+        params.append('search', search);
+      }
+      const response = await fetch(`/api/movements?${params.toString()}`);
       if (response.status === 401) {
         setData([]);
         setMeta(buildDefaultMeta(limit));
@@ -98,7 +103,7 @@ export const useMovementsQuery = ({
     } finally {
       setLoading(false);
     }
-  }, [enabled, limit, page]);
+  }, [enabled, limit, page, search]);
 
   useEffect(() => {
     void fetchMovements();
