@@ -1,3 +1,4 @@
+import type { MovementType } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import {
   isAuthError,
@@ -8,7 +9,10 @@ import {
 import { formatMovement, movementSelect } from '@/lib/movements/format';
 import { prisma } from '@/lib/prisma';
 import { movementCreateSchema } from '@/lib/validation/movements';
-import { parsePaginationParams } from '@/src/utils/pagination';
+import {
+  parsePaginationParams,
+  parseSearchParam,
+} from '@/src/utils/pagination';
 
 const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
   await requireSession(req);
@@ -22,13 +26,29 @@ const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
     });
   }
 
+  const search = parseSearchParam(req.query);
+  const normalizedSearch = search?.toUpperCase();
+  const typeFilter =
+    normalizedSearch === 'INCOME' || normalizedSearch === 'EXPENSE'
+      ? (normalizedSearch as MovementType)
+      : undefined;
+  const where = search
+    ? {
+        OR: [
+          { concept: { contains: search, mode: 'insensitive' as const } },
+          ...(typeFilter ? [{ type: typeFilter }] : []),
+        ],
+      }
+    : undefined;
+
   const skip = (pagination.page - 1) * pagination.limit;
 
   const [total, movements] = await Promise.all([
-    prisma.movement.count(),
+    prisma.movement.count({ where }),
     prisma.movement.findMany({
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       select: movementSelect,
+      where,
       skip,
       take: pagination.limit,
     }),
