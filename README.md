@@ -1,8 +1,4 @@
-Te dejo un **README completo, listo para copiar y pegar** (en español) y alineado a tu repo (Better Auth + GitHub, Prisma + Supabase, RBAC, Swagger en `/api/docs`, paginación/search server-side, tests con Vitest, deploy en Vercel).
 
-> Pégalo tal cual en `README.md`. (Incluye la variable que te falta en `.env.example`: `NEXT_PUBLIC_BETTER_AUTH_URL`).
-
-````md
 # Prueba Técnica Fullstack — Finance Manager
 **Next.js (Pages Router) + Better Auth (GitHub) + Prisma + Supabase + RBAC + Swagger + Vercel**
 
@@ -114,7 +110,6 @@ Copia `.env.example` a `.env` y completa los valores.
 
 ```bash
 cp .env.example .env
-````
 
 ### Variables requeridas
 
