@@ -6,6 +6,7 @@ interface UseUsersQueryOptions {
   page: number;
   limit: number;
   enabled: boolean;
+  search?: string;
 }
 
 export interface UsersMeta {
@@ -26,6 +27,7 @@ export const useUsersQuery = ({
   page,
   limit,
   enabled,
+  search,
 }: UseUsersQueryOptions) => {
   const [data, setData] = useState<UserRow[]>([]);
   const [meta, setMeta] = useState<UsersMeta>(buildDefaultMeta(page, limit));
@@ -44,16 +46,21 @@ export const useUsersQuery = ({
     setLoading(true);
     setError(null);
     try {
-      const search = new URLSearchParams({
+      const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
-      const response = await fetch(`/api/users?${search.toString()}`);
-      if (response.status === 401) {
-        throw new Error('Please sign in to view users.');
+      if (search && search.length > 0) {
+        params.append('search', search);
       }
-      if (response.status === 403) {
-        throw new Error('Only admins can view users.');
+      const response = await fetch(`/api/users?${params.toString()}`);
+      const authMessages: Record<number, string> = {
+        401: 'Please sign in to view users.',
+        403: 'Only admins can view users.',
+      };
+      const authError = authMessages[response.status];
+      if (authError) {
+        throw new Error(authError);
       }
       if (!response.ok) {
         throw new Error('Unable to load users.');
@@ -85,7 +92,7 @@ export const useUsersQuery = ({
     } finally {
       setLoading(false);
     }
-  }, [enabled, page, limit]);
+  }, [enabled, page, limit, search]);
 
   useEffect(() => {
     void fetchUsers();
