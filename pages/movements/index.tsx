@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 
 import { TopNav } from '@/components/layout/TopNav';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
@@ -30,6 +31,14 @@ const MovementsPage: NextPage = () => {
   const isAdmin = user?.role === 'ADMIN';
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search]);
 
   const {
     data: movements,
@@ -41,6 +50,7 @@ const MovementsPage: NextPage = () => {
     page,
     limit: pageSize,
     enabled: Boolean(user) && !userLoading,
+    search: debouncedSearch,
   });
 
   useEffect(() => {
@@ -58,6 +68,10 @@ const MovementsPage: NextPage = () => {
       setPage(paginationMeta.totalPages);
     }
   }, [page, paginationMeta.totalPages]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const {
     banner,
@@ -157,6 +171,20 @@ const MovementsPage: NextPage = () => {
               {banner.message}
             </div>
           )}
+
+          <div className='mb-6 flex justify-end'>
+            <div className='relative w-full max-w-sm'>
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder='Search by concept or type'
+                className='pr-10'
+              />
+              {queryLoading && (
+                <Loader2 className='absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground' />
+              )}
+            </div>
+          </div>
 
           <MovementsListSection
             listLoading={listLoading}
