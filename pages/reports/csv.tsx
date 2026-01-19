@@ -217,7 +217,7 @@ const CsvPreviewPage: NextPage = () => {
 
     return (
       <div className='space-y-6'>
-        <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+        <div className='flex flex-row items-center justify-between gap-4'>
           <div>
             <h1 className='text-3xl font-semibold text-foreground'>
               CSV Preview
@@ -226,7 +226,7 @@ const CsvPreviewPage: NextPage = () => {
               {buildRangeLabel(rangeParams)}
             </p>
           </div>
-          <div className='flex flex-col gap-3 sm:flex-row'>
+          <div className='flex flex-row gap-3'>
             <DownloadCsvButton from={rangeParams.from} to={rangeParams.to} />
             <Button asChild variant='ghost' className='gap-2'>
               <Link href='/reports' prefetch={false}>
@@ -243,7 +243,7 @@ const CsvPreviewPage: NextPage = () => {
             <CardDescription>{filterLabel}</CardDescription>
           </CardHeader>
           <CardContent className='space-y-4'>
-            <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='flex flex-row items-center justify-between gap-3'>
               <p className='text-sm text-muted-foreground'>
                 Range: {buildRangeLabel(rangeParams)}
               </p>
@@ -252,7 +252,7 @@ const CsvPreviewPage: NextPage = () => {
                 placeholder='Search rows'
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className='w-full sm:w-64'
+                className='w-64'
               />
             </div>
 

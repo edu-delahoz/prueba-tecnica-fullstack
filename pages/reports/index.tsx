@@ -156,14 +156,14 @@ const ReportsPage = () => {
         />
 
         <Card>
-          <CardHeader className='flex flex-col justify-between gap-4 md:flex-row md:items-center'>
+          <CardHeader className='flex flex-row items-center justify-between gap-4'>
             <div>
               <CardTitle>Performance overview</CardTitle>
               <CardDescription>
                 Income, expenses, and net balance grouped by period.
               </CardDescription>
             </div>
-            <div className='flex flex-col gap-3 sm:flex-row'>
+            <div className='flex flex-row gap-3'>
               <DownloadCsvButton
                 from={summary.range.from}
                 to={summary.range.to}

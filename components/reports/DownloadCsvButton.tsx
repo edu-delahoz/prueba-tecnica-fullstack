@@ -142,7 +142,7 @@ export const DownloadCsvButton = ({ from, to }: DownloadCsvButtonProps) => {
             <p className='text-sm font-medium text-foreground'>
               Custom date range
             </p>
-            <div className='grid gap-3 sm:grid-cols-2'>
+            <div className='grid grid-cols-2 gap-3'>
               <div className='space-y-1.5'>
                 <Label htmlFor='csv-download-from'>From</Label>
                 <Input
