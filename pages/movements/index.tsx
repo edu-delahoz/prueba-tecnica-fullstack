@@ -1,19 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarDays,
-  DollarSign,
-  RefreshCw,
-  ShieldOff,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 import { TopNav } from '@/components/layout/TopNav';
-import { TablePagination } from '@/components/table/Pagination';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,77 +13,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-import { usePagination } from '@/lib/hooks/usePagination';
-
-type MovementRole = 'INCOME' | 'EXPENSE';
-
-type MovementRow = {
-  id: string;
-  type: MovementRole;
-  amount: string;
-  concept: string;
-  date: string;
-  user: {
-    id: string;
-    name?: string | null;
-    email: string;
-  };
-};
-
-const amountFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-});
-
-const formatAmount = (value: string) => {
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) {
-    return value;
-  }
-  return amountFormatter.format(numeric);
-};
-
-const formatDate = (value: string) => {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.valueOf())) {
-    return value;
-  }
-  return parsed.toLocaleDateString();
-};
-
-const initialForm = {
-  type: 'INCOME' as MovementRole,
-  amount: '',
-  concept: '',
-  date: '',
-};
+import { MovementsCreateDialog } from '@/src/features/movements/components/MovementsCreateDialog';
+import { MovementsListSection } from '@/src/features/movements/components/MovementsListSection';
+import { useMovementsQuery } from '@/src/features/movements/hooks/useMovementsQuery';
+import { useMovementsPageState } from '@/src/features/movements/hooks/useMovementsPageState';
 
 // eslint-disable-next-line complexity
 const MovementsPage: NextPage = () => {
@@ -102,301 +27,64 @@ const MovementsPage: NextPage = () => {
     error: meError,
     refresh: refreshMe,
   } = useMe();
-  const [movements, setMovements] = useState<MovementRow[]>([]);
-  const [listLoading, setListLoading] = useState(true);
-  const [listError, setListError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState(initialForm);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
-
   const isAdmin = user?.role === 'ADMIN';
-  const {
-    items: paginatedMovements,
-    page: movementsPage,
-    pageSize: movementsPageSize,
-    totalPages: movementsTotalPages,
-    nextPage: nextMovementsPage,
-    prevPage: prevMovementsPage,
-    setPageSize: setMovementsPageSize,
-  } = usePagination(movements);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const fetchMovements = useCallback(async () => {
-    setListLoading(true);
-    setListError(null);
-    try {
-      const response = await fetch('/api/movements');
-      if (response.status === 401) {
-        setMovements([]);
-        setListError('Please sign in to view movements.');
-        return;
-      }
-      if (!response.ok) {
-        throw new Error('Unable to load movements.');
-      }
-      const payload = (await response.json()) as { data: MovementRow[] };
-      setMovements(payload.data);
-    } catch (error) {
-      setListError(
-        error instanceof Error
-          ? error.message
-          : 'Unexpected error loading movements.'
-      );
-    } finally {
-      setListLoading(false);
-    }
-  }, []);
+  const {
+    data: movements,
+    meta: paginationMeta,
+    loading: queryLoading,
+    error: queryError,
+    refresh: refreshMovements,
+  } = useMovementsQuery({
+    page,
+    limit: pageSize,
+    enabled: Boolean(user) && !userLoading,
+  });
 
   useEffect(() => {
-    if (userLoading) {
-      return;
-    }
     if (!user) {
-      setListLoading(false);
-      setMovements([]);
-      if (!meError) {
-        setListError('Please sign in to view movements.');
-      }
-      return;
+      setPage(1);
     }
-    fetchMovements();
-  }, [user, userLoading, meError, fetchMovements]);
+  }, [user]);
 
-  const resetForm = () => {
-    setForm(initialForm);
-    setFormError(null);
-    setFormLoading(false);
-  };
-
-  const handleDialogChange = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      resetForm();
+  useEffect(() => {
+    if (
+      paginationMeta.totalPages > 0 &&
+      page > paginationMeta.totalPages &&
+      paginationMeta.totalPages !== 0
+    ) {
+      setPage(paginationMeta.totalPages);
     }
-  };
+  }, [page, paginationMeta.totalPages]);
 
-  const handleInputChange = (key: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  const {
+    banner,
+    dialogOpen,
+    form,
+    formError,
+    formLoading,
+    headerDescription,
+    listLoading,
+    listError,
+    handleDialogChange,
+    handleInputChange,
+    handleSubmit,
+    handleSignIn,
+    handleSignOut,
+  } = useMovementsPageState({
+    user,
+    userLoading,
+    meError,
+    refreshMe,
+    refreshMovements,
+    queryLoading,
+    queryError,
+  });
 
-  const validateForm = () => {
-    if (!form.concept.trim()) {
-      return 'Concept is required.';
-    }
-    const amountNumber = Number(form.amount);
-    if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
-      return 'Amount must be a positive number.';
-    }
-    if (!form.date) {
-      return 'Date is required.';
-    }
-    return null;
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const validationMessage = validateForm();
-    if (validationMessage) {
-      setFormError(validationMessage);
-      return;
-    }
-    setFormLoading(true);
-    setFormError(null);
-    try {
-      const isoDate = new Date(`${form.date}T00:00:00.000Z`).toISOString();
-      const response = await fetch('/api/movements', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: form.type,
-          amount: Number(form.amount),
-          concept: form.concept.trim(),
-          date: isoDate,
-        }),
-      });
-      if (response.status === 401) {
-        throw new Error('You need to sign in again.');
-      }
-      if (response.status === 403) {
-        throw new Error('Only admins can create movements.');
-      }
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? 'Unable to create movement.');
-      }
-      setBanner({ type: 'success', message: 'Movement created successfully.' });
-      handleDialogChange(false);
-      await fetchMovements();
-    } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Unexpected error.'
-      );
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
-  const showRetry = Boolean(listError) && Boolean(user);
-
-  const headerDescription = useMemo(() => {
-    if (!user && !userLoading) {
-      return 'Sign in to review and create team movements.';
-    }
-    return 'Monitor cashflow and create new entries when needed.';
-  }, [user, userLoading]);
-
-  const handleSignIn = useCallback(async () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    await authClient.signIn.social({
-      provider: 'github',
-      callbackURL: `${window.location.origin}/`,
-    });
-  }, []);
-
-  const handleSignOut = useCallback(async () => {
-    await authClient.signOut();
-    await refreshMe();
-    await fetchMovements();
-  }, [fetchMovements, refreshMe]);
-
-  let movementSection: React.ReactNode;
-  if (listLoading) {
-    movementSection = (
-      <Card>
-        <CardContent className='flex items-center gap-3 py-10 text-muted-foreground'>
-          <RefreshCw className='h-4 w-4 animate-spin' />
-          Loading movements...
-        </CardContent>
-      </Card>
-    );
-  } else if (listError) {
-    movementSection = (
-      <Card className='border border-destructive/30 bg-destructive/5'>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2 text-destructive'>
-            <ShieldOff className='h-4 w-4' />
-            {listError}
-          </CardTitle>
-          <CardDescription>
-            {user
-              ? 'Please try again. If the issue persists contact support.'
-              : 'Sign in to access this section.'}
-          </CardDescription>
-        </CardHeader>
-        {showRetry && (
-          <CardContent>
-            <Button variant='outline' onClick={fetchMovements}>
-              Retry
-            </Button>
-          </CardContent>
-        )}
-      </Card>
-    );
-  } else if (movements.length === 0) {
-    movementSection = (
-      <Card>
-        <CardHeader>
-          <CardTitle>No movements yet</CardTitle>
-          <CardDescription>
-            {isAdmin
-              ? 'Create your first income or expense to populate the table.'
-              : 'Movements will appear here once admins add them.'}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  } else {
-    movementSection = (
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0'>
-          <div>
-            <CardTitle>Latest movements</CardTitle>
-            <CardDescription>
-              Showing {movements.length} records
-            </CardDescription>
-          </div>
-          <Badge variant='secondary' className='text-xs'>
-            Updated {new Date().toLocaleDateString()}
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Concept</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>User</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedMovements.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className='py-8 text-center text-sm text-muted-foreground'
-                  >
-                    No movements available.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedMovements.map((movement) => (
-                  <TableRow key={movement.id}>
-                    <TableCell className='font-medium'>
-                      {movement.concept}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center gap-2 font-semibold ${
-                          movement.type === 'INCOME'
-                            ? 'text-emerald-600'
-                            : 'text-rose-600'
-                        }`}
-                      >
-                        <DollarSign className='h-4 w-4' />
-                        {formatAmount(movement.amount)}
-                      </span>
-                    </TableCell>
-                    <TableCell className='text-muted-foreground'>
-                      <span className='inline-flex items-center gap-2'>
-                        <CalendarDays className='h-4 w-4' />
-                        {formatDate(movement.date)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {movement.user.name ?? movement.user.email}
-                      <p className='text-xs text-muted-foreground'>
-                        {movement.user.email}
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-          {movements.length > 0 && (
-            <TablePagination
-              page={movementsPage}
-              totalPages={movementsTotalPages}
-              onPrev={prevMovementsPage}
-              onNext={nextMovementsPage}
-              pageSize={movementsPageSize}
-              onPageSizeChange={setMovementsPageSize}
-            />
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+  const totalRecords = paginationMeta.total;
+  const hasMovements = totalRecords > 0;
 
   return (
     <>
@@ -446,86 +134,16 @@ const MovementsPage: NextPage = () => {
                 {headerDescription}
               </p>
             </div>
-            {isAdmin && (
-              <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-                <DialogTrigger asChild>
-                  <Button className='rounded-full px-6'>New movement</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create movement</DialogTitle>
-                    <DialogDescription>
-                      Register an income or expense for the team.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form className='mt-6 space-y-4' onSubmit={handleSubmit}>
-                    <div className='space-y-2'>
-                      <Label htmlFor='type'>Type</Label>
-                      <Select
-                        value={form.type}
-                        onValueChange={(value) =>
-                          handleInputChange('type', value as MovementRole)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select type' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value='INCOME'>Income</SelectItem>
-                          <SelectItem value='EXPENSE'>Expense</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className='space-y-2'>
-                      <Label htmlFor='amount'>Amount</Label>
-                      <Input
-                        id='amount'
-                        type='number'
-                        min='0'
-                        placeholder='0.00'
-                        value={form.amount}
-                        onChange={(event) =>
-                          handleInputChange('amount', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className='space-y-2'>
-                      <Label htmlFor='concept'>Concept</Label>
-                      <Input
-                        id='concept'
-                        type='text'
-                        placeholder='Description'
-                        value={form.concept}
-                        onChange={(event) =>
-                          handleInputChange('concept', event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className='space-y-2'>
-                      <Label htmlFor='date'>Date</Label>
-                      <Input
-                        id='date'
-                        type='date'
-                        value={form.date}
-                        onChange={(event) =>
-                          handleInputChange('date', event.target.value)
-                        }
-                      />
-                    </div>
-                    {formError && (
-                      <p className='text-sm text-destructive'>{formError}</p>
-                    )}
-                    <Button
-                      className='w-full'
-                      type='submit'
-                      disabled={formLoading}
-                    >
-                      {formLoading ? 'Saving…' : 'Create movement'}
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            )}
+            <MovementsCreateDialog
+              isAdmin={isAdmin}
+              open={dialogOpen}
+              form={form}
+              formError={formError}
+              formLoading={formLoading}
+              onOpenChange={handleDialogChange}
+              onInputChange={handleInputChange}
+              onSubmit={handleSubmit}
+            />
           </div>
 
           {banner && (
@@ -540,7 +158,29 @@ const MovementsPage: NextPage = () => {
             </div>
           )}
 
-          {movementSection}
+          <MovementsListSection
+            listLoading={listLoading}
+            listError={listError}
+            user={user}
+            isAdmin={isAdmin}
+            totalRecords={totalRecords}
+            hasMovements={hasMovements}
+            movements={movements}
+            paginationMeta={paginationMeta}
+            page={page}
+            pageSize={pageSize}
+            onPrev={() => setPage((current) => Math.max(current - 1, 1))}
+            onNext={() =>
+              setPage((current) =>
+                Math.min(current + 1, Math.max(paginationMeta.totalPages, 1))
+              )
+            }
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            onRetry={refreshMovements}
+          />
 
           <Card className='mt-10'>
             <CardHeader>

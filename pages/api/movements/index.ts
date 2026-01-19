@@ -8,17 +8,43 @@ import {
 import { formatMovement, movementSelect } from '@/lib/movements/format';
 import { prisma } from '@/lib/prisma';
 import { movementCreateSchema } from '@/lib/validation/movements';
+import { parsePaginationParams } from '@/src/utils/pagination';
 
 const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
   await requireSession(req);
 
-  const movements = await prisma.movement.findMany({
-    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-    select: movementSelect,
-  });
+  let pagination: { page: number; limit: number };
+  try {
+    pagination = parsePaginationParams(req.query);
+  } catch (error) {
+    return res.status(400).json({
+      error: error instanceof Error ? error.message : 'Invalid query',
+    });
+  }
+
+  const skip = (pagination.page - 1) * pagination.limit;
+
+  const [total, movements] = await Promise.all([
+    prisma.movement.count(),
+    prisma.movement.findMany({
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      select: movementSelect,
+      skip,
+      take: pagination.limit,
+    }),
+  ]);
+
+  const totalPages =
+    total === 0 ? 0 : Math.ceil(total / Math.max(1, pagination.limit));
 
   return res.status(200).json({
     data: movements.map(formatMovement),
+    meta: {
+      page: pagination.page,
+      limit: pagination.limit,
+      total,
+      totalPages,
+    },
   });
 };
 

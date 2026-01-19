@@ -1,13 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { ArrowLeft, ShieldOff } from 'lucide-react';
 
 import { EditUserDialog } from '@/components/users/EditUserDialog';
-import { UsersTable } from '@/components/users/UsersTable';
 import { TopNav } from '@/components/layout/TopNav';
-import { TablePagination } from '@/components/table/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,76 +15,58 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-import { usePagination } from '@/lib/hooks/usePagination';
-import type { Role, UserRow } from '@/lib/users/types';
-import { useUsers } from '@/lib/users/useUsers';
+import { UsersPageIntro } from '@/src/features/users/components/UsersPageIntro';
+import { UsersPagination } from '@/src/features/users/components/UsersPagination';
+import { UsersTable } from '@/src/features/users/components/UsersTable';
+import { useUsersPageState } from '@/src/features/users/hooks/useUsersPageState';
+import { useUsersQuery } from '@/src/features/users/hooks/useUsersQuery';
 
 // eslint-disable-next-line complexity
 const UsersPage: NextPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
-  const isAdmin = user?.role === 'ADMIN';
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const {
-    users,
+    data: users,
+    meta,
     loading: listLoading,
     error: listError,
     refresh,
-    updateUser,
-  } = useUsers({
-    enabled: isAdmin && !meLoading,
+  } = useUsersQuery({
+    page,
+    limit: pageSize,
+    enabled: user?.role === 'ADMIN' && !meLoading,
   });
   const {
-    items: paginatedUsers,
-    page: usersPage,
-    pageSize: usersPageSize,
-    totalPages: usersTotalPages,
-    nextPage: nextUsersPage,
-    prevPage: prevUsersPage,
-    setPageSize: setUsersPageSize,
-  } = usePagination(users);
-
-  const [banner, setBanner] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
-  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const handleSignIn = useCallback(async () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    await authClient.signIn.social({
-      provider: 'github',
-      callbackURL: `${window.location.origin}/`,
-    });
-  }, []);
-
-  const handleSignOut = useCallback(async () => {
-    await authClient.signOut();
-    await refreshMe();
-  }, [refreshMe]);
-
-  const openEditModal = (target: UserRow) => {
-    setSelectedUser(target);
-    setDialogOpen(true);
-  };
-
-  const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setSelectedUser(null);
-    }
-  };
-
-  const handleSaveUser = useCallback(
-    async (id: string, payload: { name: string; role: Role }) => {
-      await updateUser(id, payload);
-      setBanner({ type: 'success', message: 'User updated successfully.' });
+    ui: { banner, dialogOpen, selectedUser, canEdit },
+    actions: {
+      openEditModal,
+      handleDialogOpenChange,
+      handleSaveUser,
+      handleSignIn,
+      handleSignOut,
     },
-    [updateUser]
-  );
+  } = useUsersPageState({
+    user,
+    refreshMe,
+    refreshUsers: refresh,
+  });
+  const isAdmin = canEdit;
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setPage(1);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (meta.totalPages > 0 && page > meta.totalPages) {
+      setPage(meta.totalPages);
+    }
+  }, [meta.totalPages, page]);
+
+  const hasUsers = meta.total > 0;
 
   let content: React.ReactNode;
   if (meLoading) {
@@ -162,19 +142,22 @@ const UsersPage: NextPage = () => {
           <Badge variant='secondary'>Admin-only</Badge>
         </CardHeader>
         <CardContent>
-          <UsersTable
-            users={paginatedUsers}
-            canEdit={isAdmin}
-            onEdit={openEditModal}
-          />
-          {users.length > 0 && (
-            <TablePagination
-              page={usersPage}
-              totalPages={usersTotalPages}
-              onPrev={prevUsersPage}
-              onNext={nextUsersPage}
-              pageSize={usersPageSize}
-              onPageSizeChange={setUsersPageSize}
+          <UsersTable users={users} canEdit={isAdmin} onEdit={openEditModal} />
+          {hasUsers && (
+            <UsersPagination
+              page={page}
+              totalPages={meta.totalPages}
+              onPrev={() => setPage((current) => Math.max(current - 1, 1))}
+              onNext={() =>
+                setPage((current) =>
+                  Math.min(current + 1, Math.max(meta.totalPages, 1))
+                )
+              }
+              pageSize={pageSize}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
             />
           )}
         </CardContent>
@@ -204,18 +187,7 @@ const UsersPage: NextPage = () => {
             </Button>
           </div>
 
-          <div className='mb-8 space-y-2'>
-            <p className='text-sm uppercase tracking-[0.25em] text-muted-foreground'>
-              Users
-            </p>
-            <h1 className='text-3xl font-semibold text-foreground'>
-              Admin control
-            </h1>
-            <p className='text-sm text-muted-foreground'>
-              Review team members, promote admins, and keep identities up to
-              date.
-            </p>
-          </div>
+          <UsersPageIntro />
 
           {banner && (
             <div
