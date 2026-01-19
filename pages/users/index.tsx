@@ -1,13 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { ArrowLeft, ShieldOff } from 'lucide-react';
 
 import { EditUserDialog } from '@/components/users/EditUserDialog';
-import { UsersTable } from '@/components/users/UsersTable';
 import { TopNav } from '@/components/layout/TopNav';
-import { TablePagination } from '@/components/table/Pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,29 +15,44 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { authClient } from '@/lib/auth/client';
 import { useMe } from '@/lib/hooks/useMe';
-import type { Role, UserRow } from '@/lib/users/types';
-import { useUsers } from '@/lib/users/useUsers';
+import { UsersPageIntro } from '@/src/features/users/components/UsersPageIntro';
+import { UsersPagination } from '@/src/features/users/components/UsersPagination';
+import { UsersTable } from '@/src/features/users/components/UsersTable';
+import { useUsersPageState } from '@/src/features/users/hooks/useUsersPageState';
+import { useUsersQuery } from '@/src/features/users/hooks/useUsersQuery';
 
 // eslint-disable-next-line complexity
 const UsersPage: NextPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const isAdmin = user?.role === 'ADMIN';
   const {
-    users,
+    data: users,
+    meta,
     loading: listLoading,
     error: listError,
     refresh,
-    updateUser,
-    meta,
-  } = useUsers({
-    enabled: isAdmin && !meLoading,
+  } = useUsersQuery({
     page,
     limit: pageSize,
+    enabled: user?.role === 'ADMIN' && !meLoading,
   });
+  const {
+    ui: { banner, dialogOpen, selectedUser, canEdit },
+    actions: {
+      openEditModal,
+      handleDialogOpenChange,
+      handleSaveUser,
+      handleSignIn,
+      handleSignOut,
+    },
+  } = useUsersPageState({
+    user,
+    refreshMe,
+    refreshUsers: refresh,
+  });
+  const isAdmin = canEdit;
 
   useEffect(() => {
     if (!isAdmin) {
@@ -52,48 +65,6 @@ const UsersPage: NextPage = () => {
       setPage(meta.totalPages);
     }
   }, [meta.totalPages, page]);
-
-  const [banner, setBanner] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
-  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const handleSignIn = useCallback(async () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    await authClient.signIn.social({
-      provider: 'github',
-      callbackURL: `${window.location.origin}/`,
-    });
-  }, []);
-
-  const handleSignOut = useCallback(async () => {
-    await authClient.signOut();
-    await refreshMe();
-  }, [refreshMe]);
-
-  const openEditModal = (target: UserRow) => {
-    setSelectedUser(target);
-    setDialogOpen(true);
-  };
-
-  const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setSelectedUser(null);
-    }
-  };
-
-  const handleSaveUser = useCallback(
-    async (id: string, payload: { name: string; role: Role }) => {
-      await updateUser(id, payload);
-      setBanner({ type: 'success', message: 'User updated successfully.' });
-    },
-    [updateUser]
-  );
 
   const hasUsers = meta.total > 0;
 
@@ -173,7 +144,7 @@ const UsersPage: NextPage = () => {
         <CardContent>
           <UsersTable users={users} canEdit={isAdmin} onEdit={openEditModal} />
           {hasUsers && (
-            <TablePagination
+            <UsersPagination
               page={page}
               totalPages={meta.totalPages}
               onPrev={() => setPage((current) => Math.max(current - 1, 1))}
@@ -216,18 +187,7 @@ const UsersPage: NextPage = () => {
             </Button>
           </div>
 
-          <div className='mb-8 space-y-2'>
-            <p className='text-sm uppercase tracking-[0.25em] text-muted-foreground'>
-              Users
-            </p>
-            <h1 className='text-3xl font-semibold text-foreground'>
-              Admin control
-            </h1>
-            <p className='text-sm text-muted-foreground'>
-              Review team members, promote admins, and keep identities up to
-              date.
-            </p>
-          </div>
+          <UsersPageIntro />
 
           {banner && (
             <div

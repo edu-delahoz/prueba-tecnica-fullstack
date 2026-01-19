@@ -1,0 +1,101 @@
+import { useCallback, useEffect, useState } from 'react';
+
+import type { UserRow } from '@/lib/users/types';
+
+interface UseUsersQueryOptions {
+  page: number;
+  limit: number;
+  enabled: boolean;
+}
+
+export interface UsersMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+const buildDefaultMeta = (page: number, limit: number): UsersMeta => ({
+  page,
+  limit,
+  total: 0,
+  totalPages: 1,
+});
+
+export const useUsersQuery = ({
+  page,
+  limit,
+  enabled,
+}: UseUsersQueryOptions) => {
+  const [data, setData] = useState<UserRow[]>([]);
+  const [meta, setMeta] = useState<UsersMeta>(buildDefaultMeta(page, limit));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchUsers = useCallback(async () => {
+    if (!enabled) {
+      setData([]);
+      setMeta(buildDefaultMeta(page, limit));
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const search = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      const response = await fetch(`/api/users?${search.toString()}`);
+      if (response.status === 401) {
+        throw new Error('Please sign in to view users.');
+      }
+      if (response.status === 403) {
+        throw new Error('Only admins can view users.');
+      }
+      if (!response.ok) {
+        throw new Error('Unable to load users.');
+      }
+      const payload = (await response.json()) as {
+        data: UserRow[];
+        meta?: UsersMeta;
+      };
+      setData(payload.data);
+      setMeta(
+        payload.meta ?? {
+          page,
+          limit,
+          total: payload.data.length,
+          totalPages:
+            payload.data.length === 0
+              ? 1
+              : Math.ceil(payload.data.length / Math.max(limit, 1)),
+        }
+      );
+    } catch (caught) {
+      setData([]);
+      setMeta(buildDefaultMeta(page, limit));
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Unexpected error loading users.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [enabled, page, limit]);
+
+  useEffect(() => {
+    void fetchUsers();
+  }, [fetchUsers]);
+
+  return {
+    data,
+    meta,
+    loading,
+    error,
+    refresh: fetchUsers,
+  };
+};
