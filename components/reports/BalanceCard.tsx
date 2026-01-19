@@ -19,7 +19,7 @@ export const BalanceCard = ({
   totalExpense,
   rangeLabel,
 }: BalanceCardProps) => (
-  <section className='grid gap-4 md:grid-cols-3'>
+  <section className='grid grid-cols-3 gap-4'>
     <Card className='bg-gradient-to-br from-slate-900 to-slate-700 text-white'>
       <CardHeader>
         <CardDescription className='text-slate-200'>

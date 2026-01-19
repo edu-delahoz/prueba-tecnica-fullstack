@@ -103,7 +103,7 @@ const HomePage: NextPage = () => {
           )}
         </div>
 
-        <section className='grid gap-6 md:grid-cols-2'>
+        <section className='grid grid-cols-2 gap-6'>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isAuthenticated = Boolean(user);

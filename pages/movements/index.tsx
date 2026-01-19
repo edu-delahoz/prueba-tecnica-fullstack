@@ -136,7 +136,7 @@ const MovementsPage: NextPage = () => {
             </Card>
           )}
 
-          <div className='mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+          <div className='mb-8 flex flex-row items-center justify-between gap-4'>
             <div>
               <p className='text-sm uppercase tracking-[0.25em] text-muted-foreground'>
                 Movements
