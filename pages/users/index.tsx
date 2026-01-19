@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { NextPage } from 'next';
+import type { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, ShieldOff } from 'lucide-react';
@@ -22,9 +22,10 @@ import { UsersPagination } from '@/src/features/users/components/UsersPagination
 import { UsersTable } from '@/src/features/users/components/UsersTable';
 import { useUsersPageState } from '@/src/features/users/hooks/useUsersPageState';
 import { useUsersQuery } from '@/src/features/users/hooks/useUsersQuery';
+import { requireAdminPage } from '@/lib/auth/pageGuard';
 
 // eslint-disable-next-line complexity
-const UsersPage: NextPage = () => {
+const UsersPage = () => {
   const { user, loading: meLoading, refresh: refreshMe } = useMe();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -238,5 +239,7 @@ const UsersPage: NextPage = () => {
     </>
   );
 };
+
+export const getServerSideProps: GetServerSideProps = requireAdminPage;
 
 export default UsersPage;
