@@ -210,27 +210,29 @@ const MovementsPage: NextPage = () => {
             onRetry={refreshMovements}
           />
 
-          <Card className='mt-10'>
-            <CardHeader>
-              <CardTitle>Need more insights?</CardTitle>
-              <CardDescription>
-                Reports summarize incomes vs expenses so you can share updates
-                with stakeholders.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                asChild
-                variant='secondary'
-                className='group rounded-full'
-              >
-                <Link href='/reports'>
-                  Go to reports
-                  <ArrowRight className='ml-2 h-4 w-4 transition group-hover:translate-x-1' />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {isAdmin && (
+            <Card className='mt-10'>
+              <CardHeader>
+                <CardTitle>Need more insights?</CardTitle>
+                <CardDescription>
+                  Reports summarize incomes vs expenses so you can share updates
+                  with stakeholders.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  asChild
+                  variant='secondary'
+                  className='group rounded-full'
+                >
+                  <Link href='/reports'>
+                    Go to reports
+                    <ArrowRight className='ml-2 h-4 w-4 transition group-hover:translate-x-1' />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </main>
       </div>
     </>
