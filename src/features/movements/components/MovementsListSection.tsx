@@ -1,4 +1,4 @@
-import { RefreshCw, ShieldOff } from 'lucide-react';
+import { ShieldOff } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,17 +56,6 @@ export const MovementsListSection = ({
 }: MovementsListSectionProps) => {
   const showRetry = Boolean(listError) && Boolean(user);
 
-  if (listLoading) {
-    return (
-      <Card>
-        <CardContent className='flex items-center gap-3 py-10 text-muted-foreground'>
-          <RefreshCw className='h-4 w-4 animate-spin' />
-          Loading movements...
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (listError) {
     return (
       <Card className='border border-destructive/30 bg-destructive/5'>
@@ -92,7 +81,7 @@ export const MovementsListSection = ({
     );
   }
 
-  if (!hasMovements) {
+  if (!listLoading && !hasMovements) {
     return (
       <Card>
         <CardHeader>
@@ -123,6 +112,7 @@ export const MovementsListSection = ({
           movements={movements}
           formatAmount={formatMovementAmount}
           formatDate={formatMovementDate}
+          loading={listLoading}
         />
         {hasMovements && (
           <MovementsPagination

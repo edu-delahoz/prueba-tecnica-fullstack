@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { ArrowLeft, ShieldOff } from 'lucide-react';
+import { ArrowLeft, Loader2, ShieldOff } from 'lucide-react';
 
 import { EditUserDialog } from '@/components/users/EditUserDialog';
 import { TopNav } from '@/components/layout/TopNav';
@@ -119,14 +119,6 @@ const UsersPage: NextPage = () => {
         </CardHeader>
       </Card>
     );
-  } else if (listLoading) {
-    content = (
-      <Card>
-        <CardContent className='flex items-center gap-2 py-6 text-muted-foreground'>
-          Loading users...
-        </CardContent>
-      </Card>
-    );
   } else if (listError) {
     content = (
       <Card>
@@ -157,14 +149,24 @@ const UsersPage: NextPage = () => {
         </CardHeader>
         <CardContent>
           <div className='mb-4 flex justify-end'>
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder='Search by name or email'
-              className='w-full max-w-sm'
-            />
+            <div className='relative w-full max-w-sm'>
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder='Search by name or email'
+                className='pr-10'
+              />
+              {listLoading && (
+                <Loader2 className='absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground' />
+              )}
+            </div>
           </div>
-          <UsersTable users={users} canEdit={isAdmin} onEdit={openEditModal} />
+          <UsersTable
+            users={users}
+            canEdit={isAdmin}
+            loading={listLoading}
+            onEdit={openEditModal}
+          />
           {hasUsers && (
             <UsersPagination
               page={page}
