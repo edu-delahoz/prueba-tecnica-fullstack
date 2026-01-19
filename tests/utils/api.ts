@@ -9,6 +9,7 @@ interface MockOptions {
 interface MockResponse<T = unknown> extends NextApiResponse<T> {
   statusCode: number;
   body?: T;
+  headers: Record<string, string | number | readonly string[]>;
 }
 
 export const createMockReqRes = <T = unknown>({
@@ -27,15 +28,19 @@ export const createMockReqRes = <T = unknown>({
     statusCode: 200,
     body: undefined as T | undefined,
     headers: {} as Record<string, string | number | readonly string[]>,
-    setHeader(name: string, value: string | number | readonly string[]) {
+    setHeader(
+      this: MockResponse<T>,
+      name: string,
+      value: string | number | readonly string[]
+    ) {
       this.headers[name] = value;
       return this;
     },
-    status(code: number) {
+    status(this: MockResponse<T>, code: number) {
       this.statusCode = code;
       return this;
     },
-    json(payload: T) {
+    json(this: MockResponse<T>, payload: T) {
       this.body = payload;
       return this;
     },

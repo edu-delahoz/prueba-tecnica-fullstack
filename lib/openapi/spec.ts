@@ -131,6 +131,35 @@ export const openApiSpec = {
           'user',
         ],
       },
+      PaginationMeta: {
+        type: 'object',
+        properties: {
+          page: {
+            type: 'integer',
+            minimum: 1,
+            example: 1,
+            description: 'Current page number (defaults to 1).',
+          },
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
+            example: 20,
+            description: 'Page size (defaults to 20, max 100).',
+          },
+          total: {
+            type: 'integer',
+            example: 42,
+            description: 'Total amount of items for the query.',
+          },
+          totalPages: {
+            type: 'integer',
+            example: 3,
+            description: 'Total pages derived from total/limit.',
+          },
+        },
+        required: ['page', 'limit', 'total', 'totalPages'],
+      },
       MovementsListResponse: {
         type: 'object',
         properties: {
@@ -138,8 +167,32 @@ export const openApiSpec = {
             type: 'array',
             items: { $ref: '#/components/schemas/Movement' },
           },
+          meta: { $ref: '#/components/schemas/PaginationMeta' },
         },
-        required: ['data'],
+        required: ['data', 'meta'],
+        example: {
+          data: [
+            {
+              id: 'mov_abc123',
+              type: 'INCOME',
+              amount: '1200.50',
+              concept: 'Consulting services',
+              date: '2026-01-17T00:00:00.000Z',
+              createdAt: '2026-01-17T05:00:00.000Z',
+              user: {
+                id: 'usr_123',
+                name: 'Grace Hopper',
+                email: 'grace@example.com',
+              },
+            },
+          ],
+          meta: {
+            page: 1,
+            limit: 20,
+            total: 42,
+            totalPages: 3,
+          },
+        },
       },
       MovementCreateBody: {
         type: 'object',
@@ -176,6 +229,35 @@ export const openApiSpec = {
             type: 'string',
             nullable: true,
             example: '+57 300 000 0000',
+          },
+        },
+      },
+      UsersListResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/User' },
+          },
+          meta: { $ref: '#/components/schemas/PaginationMeta' },
+        },
+        required: ['data', 'meta'],
+        example: {
+          data: [
+            {
+              id: 'usr_123',
+              name: 'Ada Lovelace',
+              email: 'ada@example.com',
+              phone: '+57 300 000 0000',
+              role: 'ADMIN',
+              createdAt: '2026-01-15T12:34:56.000Z',
+            },
+          ],
+          meta: {
+            page: 1,
+            limit: 20,
+            total: 5,
+            totalPages: 1,
           },
         },
       },
@@ -291,12 +373,69 @@ export const openApiSpec = {
       get: {
         tags: ['Movements'],
         summary: 'List movements for the authenticated user',
+        parameters: [
+          {
+            in: 'query',
+            name: 'page',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              default: 1,
+            },
+            description: 'Page number to retrieve (defaults to 1).',
+          },
+          {
+            in: 'query',
+            name: 'limit',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 20,
+            },
+            description: 'Page size (defaults to 20, maximum 100).',
+          },
+        ],
         responses: {
           200: {
             description: 'List of movements',
             content: {
               'application/json': {
                 schema: { $ref: '#/components/schemas/MovementsListResponse' },
+                example: {
+                  data: [
+                    {
+                      id: 'mov_abc123',
+                      type: 'INCOME',
+                      amount: '1200.50',
+                      concept: 'Consulting services',
+                      date: '2026-01-17T00:00:00.000Z',
+                      createdAt: '2026-01-17T05:00:00.000Z',
+                      user: {
+                        id: 'usr_123',
+                        name: 'Grace Hopper',
+                        email: 'grace@example.com',
+                      },
+                    },
+                  ],
+                  meta: {
+                    page: 1,
+                    limit: 20,
+                    total: 42,
+                    totalPages: 3,
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: 'Invalid pagination params',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: {
+                  error: '"limit" cannot be greater than 100.',
+                },
               },
             },
           },
@@ -407,20 +546,64 @@ export const openApiSpec = {
       get: {
         tags: ['Users'],
         summary: 'List users (admin only)',
+        parameters: [
+          {
+            in: 'query',
+            name: 'page',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              default: 1,
+            },
+            description: 'Page number to retrieve (defaults to 1).',
+          },
+          {
+            in: 'query',
+            name: 'limit',
+            schema: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 20,
+            },
+            description: 'Page size (defaults to 20, maximum 100).',
+          },
+        ],
         responses: {
           200: {
             description: 'User list',
             content: {
               'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    data: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/User' },
+                schema: { $ref: '#/components/schemas/UsersListResponse' },
+                example: {
+                  data: [
+                    {
+                      id: 'usr_123',
+                      name: 'Ada Lovelace',
+                      email: 'ada@example.com',
+                      phone: '+57 300 000 0000',
+                      role: 'ADMIN',
+                      createdAt: '2026-01-15T12:34:56.000Z',
                     },
+                  ],
+                  meta: {
+                    page: 1,
+                    limit: 20,
+                    total: 5,
+                    totalPages: 1,
                   },
-                  required: ['data'],
+                },
+              },
+            },
+          },
+          400: {
+            description: 'Invalid pagination params',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ErrorResponse' },
+                example: {
+                  error:
+                    '"page" must be an integer greater than or equal to 1.',
                 },
               },
             },
