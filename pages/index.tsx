@@ -109,11 +109,14 @@ const HomePage: NextPage = () => {
             const isAuthenticated = Boolean(user);
             const isAdmin = user?.role === 'ADMIN';
             const isAdminOnly = item.adminOnly;
-            const locked = isAdminOnly && !isAdmin;
-            const lockMessage = !isAuthenticated
-              ? 'Sign in as admin to access'
-              : 'Admin only';
-            const shouldTriggerSignIn = !isAuthenticated && !isAdminOnly;
+            const locked =
+              (!isAuthenticated && !isAdminOnly) || (isAdminOnly && !isAdmin);
+            let lockMessage = 'Admin only';
+            if (!isAuthenticated) {
+              lockMessage = isAdminOnly
+                ? 'Sign in as admin to access'
+                : 'Sign in to access';
+            }
 
             const card = (
               <Card
@@ -160,19 +163,6 @@ const HomePage: NextPage = () => {
                 >
                   <div className='pointer-events-none'>{card}</div>
                 </div>
-              );
-            }
-
-            if (shouldTriggerSignIn) {
-              return (
-                <button
-                  key={item.title}
-                  type='button'
-                  onClick={handleSignIn}
-                  className='group block h-full text-left'
-                >
-                  {card}
-                </button>
               );
             }
 
