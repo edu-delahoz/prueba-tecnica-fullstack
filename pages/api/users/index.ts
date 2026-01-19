@@ -3,7 +3,10 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { isAuthError, requireAdmin, sendAuthError } from '@/lib/auth/rbac';
 import { prisma } from '@/lib/prisma';
 import { userSelect } from '@/lib/users/select';
-import { parsePaginationParams } from '@/src/utils/pagination';
+import {
+  parsePaginationParams,
+  parseSearchParam,
+} from '@/src/utils/pagination';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== 'GET') {
@@ -23,13 +26,26 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
     }
 
+    const search = parseSearchParam(req.query);
+    const where = search
+      ? {
+          OR: [
+            {
+              name: { contains: search, mode: 'insensitive' as const },
+            },
+            { email: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined;
+
     const skip = (pagination.page - 1) * pagination.limit;
 
     const [total, users] = await Promise.all([
-      prisma.user.count(),
+      prisma.user.count({ where }),
       prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         select: userSelect,
+        where,
         skip,
         take: pagination.limit,
       }),
